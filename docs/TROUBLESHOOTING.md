@@ -232,6 +232,39 @@ Stopped → Starting... → Running
 
 ---
 
+---
+
+## 权限问题
+
+### 配置保存失败：Permission Denied
+
+**错误**：
+```
+EACCES: permission denied, open '/etc/arkmanager/instances/main.cfg'
+```
+
+**原因**：Node.js 进程没有权限写入 `/etc/arkmanager/` 目录
+
+**快速解决（开发环境）**：
+```bash
+# 方法 1：修改权限
+sudo chown -R $USER:$USER /etc/arkmanager/instances
+
+# 方法 2：使用用户级配置
+mkdir -p ~/.config/arkmanager/instances
+cp /etc/arkmanager/instances/*.cfg ~/.config/arkmanager/instances/
+# 更新 .env: ARK_INSTANCE_CONFIG_DIR=$HOME/.config/arkmanager/instances
+```
+
+**生产环境**：以 steam 用户运行应用
+```bash
+sudo -u steam pm2 start ecosystem.config.js
+```
+
+详见：[PERMISSION_SETUP.md](PERMISSION_SETUP.md)
+
+---
+
 ## 获取帮助
 
 如果以上方法都无法解决：

@@ -160,6 +160,24 @@ pm2 start ecosystem.config.js
 
 ## 故障排除
 
+### 权限问题：无法保存配置
+
+**快速解决**：
+```bash
+# 方法 1：使用用户级配置（推荐）
+mkdir -p ~/.config/arkmanager/instances
+cp /etc/arkmanager/instances/*.cfg ~/.config/arkmanager/instances/
+# 更新 .env: ARK_INSTANCE_CONFIG_DIR=$HOME/.config/arkmanager/instances
+
+# 方法 2：修改权限
+sudo chown -R $USER:$USER /etc/arkmanager/instances
+
+# 方法 3：以 steam 用户运行
+sudo -u steam npm run dev
+```
+
+详见：[docs/PERMISSION_SETUP.md](docs/PERMISSION_SETUP.md)
+
 ### 配置修改不生效
 1. 检查 .cfg 文件是否已更新
 2. 确认已重启服务器
@@ -169,12 +187,10 @@ pm2 start ecosystem.config.js
 ```bash
 # 检查端口配置
 grep "ark_.*Port" /etc/arkmanager/instances/*.cfg
-
-# 确保每个实例端口不同
 ```
 
 ### RCON 连接失败
-- 确保服务器状态为 "Running"（不是 "Starting"）
+- 确保服务器状态为 "Running"
 - 检查 `ark_RCONEnabled="True"`
 - 验证 RCON 端口（默认 32330）
 

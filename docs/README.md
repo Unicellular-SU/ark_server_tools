@@ -11,6 +11,9 @@
 ### [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 故障排除和调试指南
 
+### [PERMISSION_SETUP.md](PERMISSION_SETUP.md)
+权限配置详细指南（解决 Permission Denied 问题）
+
 ## 📖 主文档
 
 项目主文档：[../README.md](../README.md)
