@@ -6,11 +6,12 @@ import { arkManager } from '@/lib/ark-manager'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { instance: string } }
+  { params }: { params: Promise<{ instance: string }> }
 ) {
   try {
-    const players = await arkManager.getOnlinePlayers(params.instance)
-    
+    const { instance } = await params
+    const players = await arkManager.getOnlinePlayers(instance)
+
     return NextResponse.json({
       success: true,
       data: players

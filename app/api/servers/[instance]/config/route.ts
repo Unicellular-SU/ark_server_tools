@@ -8,10 +8,11 @@ import type { ServerConfig } from '@/types/ark'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { instance: string } }
+  { params }: { params: Promise<{ instance: string }> }
 ) {
   try {
-    const configPath = await arkManager.getConfigPath(params.instance, 'GameUserSettings.ini')
+    const { instance } = await params
+    const configPath = await arkManager.getConfigPath(instance, 'GameUserSettings.ini')
     const config = await configManager.readGameUserSettings(configPath)
     
     return NextResponse.json({
@@ -31,9 +32,10 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { instance: string } }
+  { params }: { params: Promise<{ instance: string }> }
 ) {
   try {
+    const { instance } = await params
     const config: ServerConfig = await request.json()
     
     // Validate configuration
@@ -45,7 +47,7 @@ export async function POST(
       )
     }
     
-    const configPath = await arkManager.getConfigPath(params.instance, 'GameUserSettings.ini')
+    const configPath = await arkManager.getConfigPath(instance, 'GameUserSettings.ini')
     await configManager.writeGameUserSettings(configPath, config)
     
     return NextResponse.json({

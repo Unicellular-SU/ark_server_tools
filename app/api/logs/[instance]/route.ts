@@ -7,15 +7,16 @@ import { existsSync } from 'fs'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { instance: string } }
+  { params }: { params: Promise<{ instance: string }> }
 ) {
+  const { instance } = await params
   const encoder = new TextEncoder()
   
   const stream = new ReadableStream({
     async start(controller) {
       // This is a simplified implementation
       // In production, you would tail the actual log file
-      const logPath = `/path/to/ark/servers/${params.instance}/ShooterGame/Saved/Logs/ShooterGame.log`
+      const logPath = `/path/to/ark/servers/${instance}/ShooterGame/Saved/Logs/ShooterGame.log`
       
       try {
         let lastSize = 0

@@ -6,17 +6,18 @@ import { rconManager } from '@/lib/rcon-client'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { instance: string } }
+  { params }: { params: Promise<{ instance: string }> }
 ) {
   try {
+    const { instance } = await params
     const { command, host, port, password } = await request.json()
     
     // Connect if not already connected
-    if (!rconManager.isConnected(params.instance)) {
+    if (!rconManager.isConnected(instance)) {
       const connected = await rconManager.connect(
-        params.instance,
+        instance,
         host || 'localhost',
-        port || 27020,
+        port || 32330,
         password || ''
       )
       
@@ -28,7 +29,7 @@ export async function POST(
       }
     }
     
-    const response = await rconManager.execute(params.instance, command)
+    const response = await rconManager.execute(instance, command)
     
     return NextResponse.json({
       success: true,
@@ -50,10 +51,11 @@ export async function POST(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { instance: string } }
+  { params }: { params: Promise<{ instance: string }> }
 ) {
   try {
-    const history = rconManager.getHistory(params.instance)
+    const { instance } = await params
+    const history = rconManager.getHistory(instance)
     
     return NextResponse.json({
       success: true,
@@ -72,10 +74,11 @@ export async function GET(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { instance: string } }
+  { params }: { params: Promise<{ instance: string }> }
 ) {
   try {
-    await rconManager.disconnect(params.instance)
+    const { instance } = await params
+    await rconManager.disconnect(instance)
     
     return NextResponse.json({
       success: true,

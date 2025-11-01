@@ -6,10 +6,11 @@ import { arkManager } from '@/lib/ark-manager'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { instance: string } }
+  { params }: { params: Promise<{ instance: string }> }
 ) {
   try {
-    const success = await arkManager.installServer(params.instance)
+    const { instance } = await params
+    const success = await arkManager.installServer(instance)
     
     return NextResponse.json({
       success,
@@ -28,10 +29,11 @@ export async function POST(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { instance: string } }
+  { params }: { params: Promise<{ instance: string }> }
 ) {
   try {
-    const success = await arkManager.updateServer(params.instance)
+    const { instance } = await params
+    const success = await arkManager.updateServer(instance)
     
     return NextResponse.json({
       success,
@@ -50,10 +52,11 @@ export async function PUT(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { instance: string } }
+  { params }: { params: Promise<{ instance: string }> }
 ) {
   try {
-    const updateStatus = await arkManager.checkUpdate(params.instance)
+    const { instance } = await params
+    const updateStatus = await arkManager.checkUpdate(instance)
     
     return NextResponse.json({
       success: true,

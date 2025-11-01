@@ -7,10 +7,11 @@ import type { ApiResponse, ServerInstance } from '@/types/ark'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { instance: string } }
+  { params }: { params: Promise<{ instance: string }> }
 ) {
   try {
-    const instance = await arkManager.getInstanceStatus(params.instance)
+    const { instance: instanceName } = await params
+    const instance = await arkManager.getInstanceStatus(instanceName)
     
     if (!instance) {
       return NextResponse.json(
@@ -38,10 +39,11 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { instance: string } }
+  { params }: { params: Promise<{ instance: string }> }
 ) {
   try {
-    const success = await arkManager.startServer(params.instance)
+    const { instance } = await params
+    const success = await arkManager.startServer(instance)
     
     return NextResponse.json({
       success,
@@ -60,10 +62,11 @@ export async function POST(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { instance: string } }
+  { params }: { params: Promise<{ instance: string }> }
 ) {
   try {
-    const success = await arkManager.restartServer(params.instance)
+    const { instance } = await params
+    const success = await arkManager.restartServer(instance)
     
     return NextResponse.json({
       success,
@@ -82,10 +85,11 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { instance: string } }
+  { params }: { params: Promise<{ instance: string }> }
 ) {
   try {
-    const success = await arkManager.stopServer(params.instance)
+    const { instance } = await params
+    const success = await arkManager.stopServer(instance)
     
     return NextResponse.json({
       success,
