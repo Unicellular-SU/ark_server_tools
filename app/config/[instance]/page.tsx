@@ -244,68 +244,68 @@ export default function ConfigPage() {
                   <div className="border-t pt-4">
                     <h3 className="font-medium mb-3">Gameplay Multipliers</h3>
                     <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="difficulty">Difficulty Offset (0-1)</Label>
-                    <Input
-                      id="difficulty"
-                      type="number"
-                      step="0.1"
-                      value={config.DifficultyOffset || 0.5}
-                      onChange={(e) => updateConfig('DifficultyOffset', parseFloat(e.target.value))}
-                      min="0"
-                      max="1"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="xpMultiplier">XP Multiplier</Label>
-                    <Input
-                      id="xpMultiplier"
-                      type="number"
-                      step="0.1"
-                      value={config.XPMultiplier || 1.0}
-                      onChange={(e) => updateConfig('XPMultiplier', parseFloat(e.target.value))}
-                      min="0.1"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="tamingSpeed">Taming Speed Multiplier</Label>
-                    <Input
-                      id="tamingSpeed"
-                      type="number"
-                      step="0.1"
-                      value={config.TamingSpeedMultiplier || 1.0}
-                      onChange={(e) => updateConfig('TamingSpeedMultiplier', parseFloat(e.target.value))}
-                      min="0.1"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="harvestAmount">Harvest Amount Multiplier</Label>
-                    <Input
-                      id="harvestAmount"
-                      type="number"
-                      step="0.1"
-                      value={config.HarvestAmountMultiplier || 1.0}
-                      onChange={(e) => updateConfig('HarvestAmountMultiplier', parseFloat(e.target.value))}
-                      min="0.1"
-                    />
-                  </div>
-                  
-                    <div className="space-y-2">
-                      <Label htmlFor="resourceRespawn">Resource Respawn Period Multiplier</Label>
-                      <Input
-                        id="resourceRespawn"
-                        type="number"
-                        step="0.1"
-                        value={config.ResourcesRespawnPeriodMultiplier || 1.0}
-                        onChange={(e) => updateConfig('ResourcesRespawnPeriodMultiplier', parseFloat(e.target.value))}
-                        min="0.1"
-                      />
+                      <div className="space-y-2">
+                        <Label htmlFor="difficulty">Difficulty Offset (0-1)</Label>
+                        <Input
+                          id="difficulty"
+                          type="number"
+                          step="0.1"
+                          value={config.DifficultyOffset || 0.5}
+                          onChange={(e) => updateConfig('DifficultyOffset', parseFloat(e.target.value))}
+                          min="0"
+                          max="1"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="xpMultiplier">XP Multiplier</Label>
+                        <Input
+                          id="xpMultiplier"
+                          type="number"
+                          step="0.1"
+                          value={config.XPMultiplier || 1.0}
+                          onChange={(e) => updateConfig('XPMultiplier', parseFloat(e.target.value))}
+                          min="0.1"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="tamingSpeed">Taming Speed Multiplier</Label>
+                        <Input
+                          id="tamingSpeed"
+                          type="number"
+                          step="0.1"
+                          value={config.TamingSpeedMultiplier || 1.0}
+                          onChange={(e) => updateConfig('TamingSpeedMultiplier', parseFloat(e.target.value))}
+                          min="0.1"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="harvestAmount">Harvest Amount Multiplier</Label>
+                        <Input
+                          id="harvestAmount"
+                          type="number"
+                          step="0.1"
+                          value={config.HarvestAmountMultiplier || 1.0}
+                          onChange={(e) => updateConfig('HarvestAmountMultiplier', parseFloat(e.target.value))}
+                          min="0.1"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="resourceRespawn">Resource Respawn Period Multiplier</Label>
+                        <Input
+                          id="resourceRespawn"
+                          type="number"
+                          step="0.1"
+                          value={config.ResourcesRespawnPeriodMultiplier || 1.0}
+                          onChange={(e) => updateConfig('ResourcesRespawnPeriodMultiplier', parseFloat(e.target.value))}
+                          min="0.1"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
                 
                 <div className="border-t pt-4">
                   <h3 className="font-medium mb-3">Auto-Update & Backup</h3>

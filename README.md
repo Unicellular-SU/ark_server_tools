@@ -273,4 +273,5 @@ MIT License - 详见 [LICENSE](LICENSE)
 
 **版本**: 1.0.0  
 **快速开始**: [docs/QUICK_START.md](docs/QUICK_START.md)  
-**配置指南**: [docs/CONFIGURATION.md](docs/CONFIGURATION.md)
+**配置指南**: [docs/CONFIGURATION.md](docs/CONFIGURATION.md)  
+**故障排除**: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
