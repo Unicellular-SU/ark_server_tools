@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { configManager } from '@/lib/config-manager'
-import { arkManager } from '@/lib/ark-manager'
 import type { ServerConfig } from '@/types/ark'
 
 /**
  * GET /api/servers/[instance]/config - Read server configuration
+ * Reads from instance .cfg file (ark_ parameters)
  */
 export async function GET(
   request: NextRequest,
@@ -12,8 +12,11 @@ export async function GET(
 ) {
   try {
     const { instance } = await params
-    const configPath = await arkManager.getConfigPath(instance, 'GameUserSettings.ini')
-    const config = await configManager.readGameUserSettings(configPath)
+    
+    // Read from instance .cfg file
+    const instanceConfigDir = process.env.ARK_INSTANCE_CONFIG_DIR || '/etc/arkmanager/instances'
+    const configPath = `${instanceConfigDir}/${instance}.cfg`
+    const config = await configManager.readInstanceConfigFile(configPath)
     
     return NextResponse.json({
       success: true,
@@ -29,6 +32,10 @@ export async function GET(
 
 /**
  * POST /api/servers/[instance]/config - Write server configuration
+ * Writes to instance .cfg file (ark_ parameters)
+ * 
+ * This updates the arkmanager instance configuration file with ark_ prefixed parameters.
+ * These parameters are used when starting the server.
  */
 export async function POST(
   request: NextRequest,
@@ -47,12 +54,14 @@ export async function POST(
       )
     }
     
-    const configPath = await arkManager.getConfigPath(instance, 'GameUserSettings.ini')
-    await configManager.writeGameUserSettings(configPath, config)
+    // Write to instance .cfg file
+    const instanceConfigDir = process.env.ARK_INSTANCE_CONFIG_DIR || '/etc/arkmanager/instances'
+    const configPath = `${instanceConfigDir}/${instance}.cfg`
+    await configManager.writeInstanceConfigFile(configPath, config)
     
     return NextResponse.json({
       success: true,
-      message: 'Configuration saved successfully'
+      message: 'Configuration saved successfully. Restart the server for changes to take effect.'
     })
   } catch (error: any) {
     return NextResponse.json(

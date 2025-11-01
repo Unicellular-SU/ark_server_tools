@@ -217,13 +217,14 @@ arkmanager list-instances
 
 For RCON functionality, ensure your server instances have RCON enabled in their configuration:
 
-```ini
-# In GameUserSettings.ini
-[ServerSettings]
-RCONEnabled=True
-RCONPort=27020
-ServerAdminPassword=your-admin-password
+```bash
+# In /etc/arkmanager/instances/<instance>.cfg
+ark_RCONEnabled="True"
+ark_RCONPort="32330"
+ark_ServerAdminPassword="your-admin-password"
 ```
+
+**重要**：配置通过实例 `.cfg` 文件管理，而不是直接修改 `GameUserSettings.ini`。详见 [CONFIG_UPDATE_GUIDE.md](CONFIG_UPDATE_GUIDE.md)
 
 ## Usage
 
@@ -245,6 +246,16 @@ Navigate to the dashboard to see an overview of all server instances with real-t
    - **Gameplay**: Multipliers and difficulty
    - **Advanced**: Raw JSON configuration
 4. Click **Save Configuration**
+5. **重要**：配置保存到 `/etc/arkmanager/instances/<instance>.cfg` 文件
+6. **重启服务器**以应用配置更改
+
+**配置工作原理**：
+- Web UI 修改 `.cfg` 文件中的 `ark_` 参数
+- arkmanager 在启动时读取这些参数
+- 参数转换为服务器启动命令行参数
+- 因此修改后必须重启服务器才能生效
+
+详细说明：[CONFIG_UPDATE_GUIDE.md](CONFIG_UPDATE_GUIDE.md)
 
 ### Cluster Setup
 1. Go to **Cluster** page
@@ -348,16 +359,26 @@ ark-server-manager/
 - Test manually: `docker exec ark-web-manager arkmanager status`
 
 ### RCON Connection Failures
-- Verify RCON is enabled in server configuration
-- Check RCON port is correct
-- Verify admin password matches
-- Ensure server is running
+- Verify RCON is enabled in server configuration: `ark_RCONEnabled="True"`
+- Check RCON port is correct (default: 32330)
+- Verify admin password matches: `ark_ServerAdminPassword`
+- Ensure server status is "Running" (not "Starting")
 
 ### Server Not Starting
 - Check arkmanager logs: `arkmanager status @instance`
 - Verify server files are installed
 - Check disk space and permissions
 - Review server logs in the Logs page
+
+### Configuration Changes Not Taking Effect
+- **Most common issue**: Forgot to restart the server
+- Verify config file was updated: `cat /etc/arkmanager/instances/<instance>.cfg`
+- Check for `ark_` parameter (e.g., `ark_MaxPlayers="8"`)
+- Restart server: `arkmanager restart @instance` or use Web UI
+- Wait for server to fully start (status: "Running")
+- Verify: `arkmanager status @instance`
+
+See [CONFIG_UPDATE_GUIDE.md](CONFIG_UPDATE_GUIDE.md) for detailed configuration management guide.
 
 ## Security Considerations
 

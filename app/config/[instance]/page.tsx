@@ -65,7 +65,7 @@ export default function ConfigPage() {
       
       toast({
         title: data.success ? 'Success' : 'Error',
-        description: data.success ? 'Configuration saved successfully' : data.error,
+        description: data.success ? data.message || 'Configuration saved successfully' : data.error,
         variant: data.success ? 'default' : 'destructive'
       })
     } catch (error) {
@@ -110,6 +110,12 @@ export default function ConfigPage() {
             <Save className="mr-2 h-4 w-4" />
             {saving ? 'Saving...' : 'Save Configuration'}
           </Button>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-900">
+            <strong>重要提示：</strong>配置保存后，需要重启服务器才能生效。配置将保存到 <code className="bg-blue-100 px-1 rounded">/etc/arkmanager/instances/{instance}.cfg</code>
+          </p>
         </div>
 
         <Tabs defaultValue="basic" className="space-y-4">

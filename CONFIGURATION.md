@@ -113,6 +113,14 @@ ark_HarvestAmountMultiplier="1.0"
 # ark_GameModIds="123456,789012"
 ```
 
+**重要**：
+- 所有 ARK 服务器参数必须使用 `ark_` 前缀
+- 通过 Web UI 修改的配置会更新此文件中的 `ark_` 参数
+- 修改后必须重启服务器才能生效
+- 不要直接修改 `${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini`，它会被覆盖
+
+详细说明请参考 [CONFIG_UPDATE_GUIDE.md](CONFIG_UPDATE_GUIDE.md)
+
 ### 6. 集群配置
 
 对于多服互通，在每个实例配置中添加：
@@ -177,6 +185,15 @@ A: 确认：
 
 ### Q: 找不到服务器实例？
 A: 运行 `arkmanager list-instances` 查看可用实例
+
+### Q: 配置修改后不生效？
+A: 确认：
+1. 检查 `/etc/arkmanager/instances/<instance>.cfg` 文件是否已更新
+2. 修改后必须重启服务器：`arkmanager restart @instance`
+3. Web UI 会提示"重启服务器以应用更改"
+4. 不要直接编辑 GameUserSettings.ini，它会被覆盖
+
+详见 [CONFIG_UPDATE_GUIDE.md](CONFIG_UPDATE_GUIDE.md)
 
 ## 参考资源
 

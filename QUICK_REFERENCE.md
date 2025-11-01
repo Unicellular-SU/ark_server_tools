@@ -148,14 +148,42 @@ curl http://localhost:3000/api/servers/main
 curl -N http://localhost:3000/api/events
 ```
 
+## 配置更新说明
+
+### ⚠️ 配置修改后必须重启服务器
+
+**正确流程**：
+1. Web UI 修改配置（如最大玩家数改为 8）
+2. 点击"保存配置"
+3. 配置写入 `/etc/arkmanager/instances/main.cfg`（更新 `ark_MaxPlayers="8"`）
+4. **重启服务器**（通过 Web UI 或 `arkmanager restart @main`）
+5. 配置生效
+
+**为什么需要重启？**
+- arkmanager 在启动服务器时读取 .cfg 文件
+- 将 `ark_` 参数转换为启动命令行参数
+- 运行中的服务器不会自动重新加载配置
+
+**验证配置是否已保存**：
+```bash
+cat /etc/arkmanager/instances/main.cfg | grep MaxPlayers
+# 应该显示: ark_MaxPlayers="8"
+```
+
+详见：[CONFIG_UPDATE_GUIDE.md](CONFIG_UPDATE_GUIDE.md)
+
+---
+
 ## 更新日志
 
 **2025-11-01**
 - ✅ 修复配置文件注释解析
-- ✅ 修复服务器状态判断逻辑
+- ✅ 修复服务器状态判断逻辑（支持 4 种状态）
 - ✅ 支持启动中状态（2个阶段）
 - ✅ 正确提取玩家数量
 - ✅ 添加服务器版本信息
 - ✅ 修复 systeminformation 警告
 - ✅ Next.js 15 params async 兼容
+- ✅ **配置管理改为修改 .cfg 文件（ark_ 参数）**
+- ✅ 添加配置保存提示（需要重启）
 
