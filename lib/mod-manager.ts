@@ -3,6 +3,25 @@ import { promisify } from 'util'
 
 const execAsync = promisify(exec)
 
+// Timeout helper for long-running operations
+async function execWithTimeout(command: string, timeoutMs: number = 30000): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Command timed out after ${timeoutMs}ms: ${command}`))
+    }, timeoutMs)
+
+    execAsync(command)
+      .then((result) => {
+        clearTimeout(timer)
+        resolve(result)
+      })
+      .catch((error) => {
+        clearTimeout(timer)
+        reject(error)
+      })
+  })
+}
+
 /**
  * Mod Manager - Handles ARK server mod installation and management
  */
@@ -115,14 +134,16 @@ export class ModManager {
    */
   async listMods(instance: string): Promise<string[]> {
     try {
-      const { stdout } = await execAsync(
-        `${this.arkToolsPath} list-mods @${instance}`
+      console.log(`Listing mods for instance: ${instance}`)
+      const { stdout } = await execWithTimeout(
+        `${this.arkToolsPath} list-mods @${instance}`,
+        60000 * 5 // 5 minutes timeout for listing mods
       )
-      
+
       // Parse mod list from output
       const mods: string[] = []
       const lines = stdout.split('\n')
-      
+
       for (const line of lines) {
         const trimmed = line.trim()
         // Look for mod IDs (typically numeric)
@@ -131,10 +152,14 @@ export class ModManager {
           mods.push(modMatch[1])
         }
       }
-      
+
+      console.log(`Found ${mods.length} mods for instance ${instance}`)
       return mods
     } catch (error: any) {
       console.error(`Error listing mods:`, error)
+      if (error.message?.includes('timed out')) {
+        throw new Error('Listing mods is taking longer than expected. The server may be busy or unreachable.')
+      }
       return []
     }
   }
@@ -144,19 +169,27 @@ export class ModManager {
    */
   async checkModUpdate(instance: string): Promise<boolean> {
     try {
-      const { stdout } = await execAsync(
-        `${this.arkToolsPath} checkmodupdate @${instance}`
+      console.log(`Checking mod updates for instance: ${instance}`)
+      const { stdout } = await execWithTimeout(
+        `${this.arkToolsPath} checkmodupdate @${instance}`,
+        90000 * 5 // 5 minutes timeout - Steam Workshop checks can be slow
       )
-      
+
       // Exit code 0 means update available
       // Exit code 1 means no update
-      return stdout.toLowerCase().includes('update available')
+      const hasUpdate = stdout.toLowerCase().includes('update available')
+      console.log(`Mod update check result for ${instance}: ${hasUpdate ? 'updates available' : 'up to date'}`)
+      return hasUpdate
     } catch (error: any) {
       // If command returns non-zero exit code, check the error
       if (error.code === 1) {
+        console.log(`No mod updates available for ${instance}`)
         return false // No update available
       }
       console.error('Error checking mod update:', error)
+      if (error.message?.includes('timed out')) {
+        throw new Error('Checking mod updates is taking longer than expected. Steam Workshop may be slow or unreachable.')
+      }
       return false
     }
   }

@@ -24,6 +24,7 @@ export default function ModsPage() {
   const [installedMods, setInstalledMods] = useState<string[]>([])
   const [newModId, setNewModId] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState('')
   const { toast } = useToast()
 
   useEffect(() => {
@@ -55,16 +56,29 @@ export default function ModsPage() {
   const fetchMods = async () => {
     try {
       setLoading(true)
+      setLoadingMessage('Loading installed mods... This may take a moment.')
       const response = await fetch(`/api/mods/${selectedInstance}`)
       const data = await response.json()
       
       if (data.success) {
         setInstalledMods(data.data)
+      } else if (data.error) {
+        toast({
+          title: 'Error',
+          description: data.error,
+          variant: 'destructive'
+        })
       }
     } catch (error) {
       console.error('Failed to fetch mods:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load mods. The server may be unreachable.',
+        variant: 'destructive'
+      })
     } finally {
       setLoading(false)
+      setLoadingMessage('')
     }
   }
 
@@ -74,6 +88,7 @@ export default function ModsPage() {
     try {
       setLoading(true)
       const modIds = newModId.split(',').map(id => id.trim()).filter(id => id)
+      setLoadingMessage(`Installing ${modIds.length} mod(s)... This may take several minutes depending on mod size.`)
       
       const response = await fetch(`/api/mods/${selectedInstance}`, {
         method: 'POST',
@@ -100,12 +115,14 @@ export default function ModsPage() {
       })
     } finally {
       setLoading(false)
+      setLoadingMessage('')
     }
   }
 
   const handleUninstallMod = async (modId: string) => {
     try {
       setLoading(true)
+      setLoadingMessage(`Uninstalling mod ${modId}...`)
       const response = await fetch(`/api/mods/${selectedInstance}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -130,12 +147,14 @@ export default function ModsPage() {
       })
     } finally {
       setLoading(false)
+      setLoadingMessage('')
     }
   }
 
   const handleCheckModUpdates = async () => {
     try {
       setLoading(true)
+      setLoadingMessage('Checking for mod updates... This may take up to 90 seconds as we check Steam Workshop.')
       const response = await fetch(`/api/mods/${selectedInstance}/check`)
       const data = await response.json()
       
@@ -147,15 +166,22 @@ export default function ModsPage() {
             : 'All mods are up to date',
           variant: data.data.updateAvailable ? 'default' : 'default'
         })
+      } else if (data.error) {
+        toast({
+          title: 'Error',
+          description: data.error,
+          variant: 'destructive'
+        })
       }
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to check for mod updates',
+        description: 'Failed to check for mod updates. Steam Workshop may be unreachable.',
         variant: 'destructive'
       })
     } finally {
       setLoading(false)
+      setLoadingMessage('')
     }
   }
 
@@ -231,13 +257,28 @@ export default function ModsPage() {
                   <CardDescription>Manage currently installed mods</CardDescription>
                 </div>
                 <Button onClick={handleCheckModUpdates} variant="outline" size="sm" disabled={loading}>
-                  <RefreshCw className="mr-2 h-4 w-4" />
+                  <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                   Check Updates
                 </Button>
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <p className="text-sm text-muted-foreground">Loading mods...</p>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <RefreshCw className="h-5 w-5 animate-spin text-primary" />
+                      <div>
+                        <p className="text-sm font-medium">Loading...</p>
+                        {loadingMessage && (
+                          <p className="text-xs text-muted-foreground mt-1">{loadingMessage}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                      <p className="text-xs text-blue-900">
+                        <strong>Note:</strong> Loading mods from the server may take some time, especially if there are many mods installed or if the server is busy.
+                      </p>
+                    </div>
+                  </div>
                 ) : installedMods.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No mods installed</p>
                 ) : (
@@ -298,8 +339,11 @@ export default function ModsPage() {
                   </p>
                 </div>
                 <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-3">
-                  <p className="text-xs text-blue-900">
+                  <p className="text-xs text-blue-900 mb-2">
                     <strong>提示：</strong>Mod 安装可能需要几分钟时间，具体取决于 mod 大小和网络速度。
+                  </p>
+                  <p className="text-xs text-blue-900">
+                    <strong>性能说明：</strong>加载已安装 mods 列表和检查更新可能需要 30-90 秒，这是因为需要扫描服务器文件和连接 Steam Workshop。请耐心等待。
                   </p>
                 </div>
               </CardContent>
