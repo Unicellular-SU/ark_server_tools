@@ -53,15 +53,21 @@ export default function ModsPage() {
     }
   }
 
-  const fetchMods = async () => {
+  const fetchMods = async (forceRefresh: boolean = false) => {
     try {
       setLoading(true)
-      setLoadingMessage('Loading installed mods... This may take a moment.')
-      const response = await fetch(`/api/mods/${selectedInstance}`)
+      setLoadingMessage(forceRefresh 
+        ? 'Refreshing mod list from server... This may take a moment.' 
+        : 'Loading installed mods... (using cache if available)')
+      
+      const url = `/api/mods/${selectedInstance}${forceRefresh ? '?forceRefresh=true' : ''}`
+      const response = await fetch(url)
       const data = await response.json()
       
       if (data.success) {
         setInstalledMods(data.data)
+        // Don't show toast for cached results to avoid spam
+        // Users can see cache status in console logs
       } else if (data.error) {
         toast({
           title: 'Error',
@@ -151,11 +157,15 @@ export default function ModsPage() {
     }
   }
 
-  const handleCheckModUpdates = async () => {
+  const handleCheckModUpdates = async (forceRefresh: boolean = false) => {
     try {
       setLoading(true)
-      setLoadingMessage('Checking for mod updates... This may take up to 90 seconds as we check Steam Workshop.')
-      const response = await fetch(`/api/mods/${selectedInstance}/check`)
+      setLoadingMessage(forceRefresh
+        ? 'Checking for mod updates from Steam Workshop... This may take up to 90 seconds.'
+        : 'Checking for mod updates... (using cache if available)')
+      
+      const url = `/api/mods/${selectedInstance}/check${forceRefresh ? '?forceRefresh=true' : ''}`
+      const response = await fetch(url)
       const data = await response.json()
       
       if (data.success) {
@@ -256,10 +266,28 @@ export default function ModsPage() {
                   <CardTitle>Installed Mods</CardTitle>
                   <CardDescription>Manage currently installed mods</CardDescription>
                 </div>
-                <Button onClick={handleCheckModUpdates} variant="outline" size="sm" disabled={loading}>
-                  <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                  Check Updates
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => fetchMods(true)} 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={loading}
+                    title="Refresh mod list from server"
+                  >
+                    <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    Refresh List
+                  </Button>
+                  <Button 
+                    onClick={() => handleCheckModUpdates(true)} 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={loading}
+                    title="Check for updates on Steam Workshop"
+                  >
+                    <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    Check Updates
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {loading ? (
@@ -342,8 +370,11 @@ export default function ModsPage() {
                   <p className="text-xs text-blue-900 mb-2">
                     <strong>提示：</strong>Mod 安装可能需要几分钟时间，具体取决于 mod 大小和网络速度。
                   </p>
+                  <p className="text-xs text-blue-900 mb-2">
+                    <strong>性能优化：</strong>系统已启用智能缓存机制。Mod 列表缓存 5 分钟，更新检查缓存 30 分钟。首次加载可能需要时间，后续访问将即时响应。
+                  </p>
                   <p className="text-xs text-blue-900">
-                    <strong>性能说明：</strong>加载已安装 mods 列表和检查更新可能需要 30-90 秒，这是因为需要扫描服务器文件和连接 Steam Workshop。请耐心等待。
+                    <strong>刷新数据：</strong>点击 "Refresh List" 或 "Check Updates" 按钮可以强制从服务器获取最新数据（可能需要 30-90 秒）。
                   </p>
                 </div>
               </CardContent>

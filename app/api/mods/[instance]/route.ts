@@ -3,6 +3,7 @@ import { modManager } from '@/lib/mod-manager'
 
 /**
  * GET /api/mods/[instance] - List installed mods
+ * Query params: forceRefresh=true to bypass cache
  */
 export async function GET(
   request: NextRequest,
@@ -10,11 +11,15 @@ export async function GET(
 ) {
   try {
     const { instance } = await params
-    const mods = await modManager.listMods(instance)
+    const { searchParams } = new URL(request.url)
+    const forceRefresh = searchParams.get('forceRefresh') === 'true'
+    
+    const mods = await modManager.listMods(instance, forceRefresh)
     
     return NextResponse.json({
       success: true,
-      data: mods
+      data: mods,
+      cached: !forceRefresh // Indicate if result might be cached
     })
   } catch (error: any) {
     return NextResponse.json(
