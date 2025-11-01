@@ -12,25 +12,24 @@ export async function POST(
     const { instance } = await params
     const { command, host, port, password } = await request.json()
     
-    // Connect with fresh connection (connect method handles existing connections)
-    const connected = await rconManager.connect(
-      instance,
-      host || 'localhost',
-      port || 32330,
-      password || ''
-    )
-    
-    if (!connected) {
-      return NextResponse.json(
-        { success: false, error: 'Failed to connect to RCON' },
-        { status: 500 }
+    // Connect if not already connected (reuse existing connection)
+    if (!rconManager.isConnected(instance)) {
+      const connected = await rconManager.connect(
+        instance,
+        host || 'localhost',
+        port || 32330,
+        password || ''
       )
+      
+      if (!connected) {
+        return NextResponse.json(
+          { success: false, error: 'Failed to connect to RCON' },
+          { status: 500 }
+        )
+      }
     }
     
     const response = await rconManager.execute(instance, command)
-    
-    // Disconnect after command to prevent connection reuse issues
-    await rconManager.disconnect(instance)
     
     // Ensure response is serializable
     const responseString = typeof response === 'string' ? response : String(response)
@@ -46,7 +45,7 @@ export async function POST(
       }
     })
   } catch (error: any) {
-    // Make sure to disconnect on error as well
+    // Disconnect on error to force reconnection on next request
     try {
       await rconManager.disconnect(instance)
     } catch (disconnectError) {
