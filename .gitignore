@@ -36,3 +36,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Reference files (not part of project)
+ark-server-tools-file/
+ark-server-tools-readme.asciidoc
+

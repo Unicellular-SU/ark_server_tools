@@ -1,501 +1,276 @@
 # ARK Server Manager
 
-A modern web-based management interface for ARK: Survival Evolved dedicated servers, built with Next.js 15 and integrated with ark-server-tools.
+基于 Next.js 15 的 ARK: Survival Evolved 服务器 Web 管理后台，集成 ark-server-tools。
 
-![ARK Server Manager](https://img.shields.io/badge/ARK-Server%20Manager-blue)
-![Next.js](https://img.shields.io/badge/Next.js-15-black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![Next.js](https://img.shields.io/badge/Next.js-15-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 
-## Features
+## 功能特性
 
-### 🎮 Server Management
-- **Multi-instance Support**: Manage multiple ARK server instances from a single interface
-- **One-Click Operations**: Start, stop, and restart servers with confirmation dialogs
-- **Server Installation**: Easy wizard for installing new server instances
-- **Update Management**: Check for and apply server updates
-- **Real-time Status**: Live server status monitoring with SSE (Server-Sent Events)
+- 🎮 **服务器管理** - 启动/停止/重启/安装/更新
+- 📊 **实时监控** - CPU、内存、玩家数量（SSE 实时更新）
+- ⚙️ **配置管理** - 图形化配置界面，保存到 .cfg 文件
+- 🧩 **Mod 管理** - 安装/卸载 Steam Workshop Mod
+- 🌐 **集群配置** - 多服互通设置
+- 🎯 **RCON 控制台** - Web 终端，快捷命令
+- 📝 **日志查看** - 实时日志流
 
-### 📊 Dashboard & Monitoring
-- **Live Metrics**: Real-time CPU and memory usage monitoring
-- **Player Tracking**: View online players and connection statistics
-- **Resource Visualization**: Progress bars and charts for system resources
-- **Server Overview**: Quick status cards for all server instances
+## 快速开始
 
-### ⚙️ Configuration Management
-- **Graphical Interface**: Edit server settings without touching config files
-- **Organized Settings**: Basic, Gameplay, and Advanced configuration tabs
-- **Validation**: Built-in configuration validation to prevent errors
-- **Raw Editor**: Advanced JSON editor for power users
-- **Cluster Configuration**: Easy setup for server clustering and cross-transfers
+### 前提条件
 
-### 🎯 RCON Management
-- **Terminal Interface**: Terminal-like RCON console with command history
-- **Quick Commands**: One-click buttons for common operations
-  - Broadcast messages
-  - Save world
-  - Kick/ban players
-  - Destroy wild dinos
-  - Set time of day
-  - List players
-- **Real-time Execution**: Instant command execution and response display
+- Linux 系统（Ubuntu 20.04+）
+- Node.js 20+
+- ark-server-tools 已安装
 
-### 📝 Log Viewer
-- **Live Streaming**: Real-time log streaming via SSE
-- **Pause/Resume**: Control log flow for easier reading
-- **Auto-scroll**: Automatic scrolling to latest entries
-- **Clear History**: Clean up log display
+### 安装 ark-server-tools
 
-### 🌐 Cluster Support
-- **Multi-server Clustering**: Configure cluster ID and shared directories
-- **Server Selection**: Visual interface for selecting cluster members
-- **Cross-server Chat**: Optional cross-server chat configuration
-
-## Technology Stack
-
-### Frontend
-- **Next.js 15** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **Tailwind CSS** - Utility-first styling
-- **shadcn/ui** - High-quality UI components
-- **Lucide Icons** - Beautiful icon set
-
-### Backend
-- **Next.js API Routes** - Serverless API endpoints
-- **ark-server-tools** - Server management via shell commands
-- **simple-rcon** - RCON protocol implementation
-- **systeminformation** - System metrics collection
-- **ini** - Configuration file parsing
-
-### Deployment
-- **Docker** - Containerized deployment
-- **PM2** - Process management with cluster mode
-- **Node.js 20** - Runtime environment
-
-## Prerequisites
-
-- **Operating System**: Linux (Ubuntu 20.04+ recommended)
-- **Node.js**: v20 or higher
-- **ark-server-tools**: Installed and configured ([Installation Guide](https://github.com/arkmanager/ark-server-tools))
-- **ARK Server**: At least one ARK server instance configured
-- **PM2** (optional): For production deployment without Docker
-
-## Installation
-
-### Method 1: Docker (Recommended)
-
-1. Clone the repository:
-```bash
-git clone https://github.com/your-repo/ark-server-manager.git
-cd ark-server-manager
-```
-
-2. Configure environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-nano .env
-```
-
-3. Update volume paths in `docker-compose.yml`:
-```yaml
-volumes:
-  - /etc/arkmanager:/etc/arkmanager:ro
-  - /home/steam/ARK:/ark-servers:rw
-  - /home/steam/cluster:/cluster:rw
-```
-
-4. Build and run with Docker Compose:
-```bash
-docker-compose up -d
-```
-
-5. Access the web interface at `http://your-server:3000`
-
-### Method 2: PM2 (Production)
-
-1. Clone and install dependencies:
-```bash
-git clone https://github.com/your-repo/ark-server-manager.git
-cd ark-server-manager
-npm install
-```
-
-2. Build the application:
-```bash
-npm run build
-```
-
-3. Configure PM2 ecosystem file:
-```bash
-# Edit ecosystem.config.js with your paths
-nano ecosystem.config.js
-```
-
-4. Start with PM2:
-```bash
-pm2 start ecosystem.config.js
-pm2 save
-pm2 startup
-```
-
-### Method 3: Development
-
-1. Clone and install:
-```bash
-git clone https://github.com/your-repo/ark-server-manager.git
-cd ark-server-manager
-npm install
-```
-
-2. Start development server:
-```bash
-npm run dev
-```
-
-3. Open `http://localhost:3000`
-
-## Configuration
-
-详细配置说明请参考 [CONFIGURATION.md](CONFIGURATION.md)
-
-### Environment Variables
-
-Create a `.env` file in the project root:
-
-```bash
-# ARK Server Tools Configuration
-ARK_TOOLS_PATH=arkmanager                           # Path to arkmanager binary
-ARK_SERVERS_PATH=/home/steam/ARK                    # ARK servers installation path
-ARK_INSTANCE_CONFIG_DIR=/etc/arkmanager/instances  # Instance config directory
-CLUSTER_DATA_PATH=/home/steam/cluster               # Cluster shared data path
-
-# Application
-NODE_ENV=production
-PORT=3000
-```
-
-### 重要配置说明
-
-根据 ark-server-tools 官方文档，默认端口配置为：
-- **游戏端口 (Port)**: 7778 (UDP)
-- **查询端口 (QueryPort)**: 27015 (UDP)
-- **RCON 端口 (RCONPort)**: 32330 (TCP)
-
-每个服务器实例必须有独立的端口配置。
-
-### ark-server-tools Integration
-
-本项目已根据 [ark-server-tools 官方文档](https://github.com/arkmanager/ark-server-tools) 进行配置。
-
-1. Install ark-server-tools:
 ```bash
 curl -sL https://raw.githubusercontent.com/arkmanager/ark-server-tools/master/netinstall.sh | sudo bash -s steam
 ```
 
-2. Create instance configuration in `/etc/arkmanager/instances/<instance>.cfg`:
+### 安装项目
+
+```bash
+# 1. 克隆项目
+git clone <your-repo-url>
+cd ark-server-manager
+
+# 2. 安装依赖
+npm install
+
+# 3. 配置环境变量
+cp .env.example .env
+nano .env
+
+# 4. 启动开发服务器
+npm run dev
+
+# 5. 访问
+http://localhost:3000
+```
+
+## 配置说明
+
+### 环境变量 (.env)
+
+```bash
+ARK_TOOLS_PATH=arkmanager
+ARK_SERVERS_PATH=/home/steam/ARK
+ARK_INSTANCE_CONFIG_DIR=/etc/arkmanager/instances
+CLUSTER_DATA_PATH=/home/steam/cluster
+PORT=3000
+```
+
+### 实例配置
+
+创建 `/etc/arkmanager/instances/main.cfg`：
+
 ```bash
 arkserverroot="/home/steam/ARK"
 serverMap="TheIsland"
-ark_RCONEnabled="True"
-ark_RCONPort="32330"
+
+# 端口（每个实例必须唯一！）
 ark_Port="7778"
 ark_QueryPort="27015"
-ark_ServerAdminPassword="your-password"
-ark_SessionName="My ARK Server"
-ark_MaxPlayers="70"
-```
-
-3. Test arkmanager commands:
-```bash
-arkmanager status
-arkmanager list-instances
-```
-
-详细配置说明请参考 [CONFIGURATION.md](CONFIGURATION.md)
-
-### RCON Configuration
-
-For RCON functionality, ensure your server instances have RCON enabled in their configuration:
-
-```bash
-# In /etc/arkmanager/instances/<instance>.cfg
-ark_RCONEnabled="True"
 ark_RCONPort="32330"
-ark_ServerAdminPassword="your-admin-password"
+
+# RCON
+ark_RCONEnabled="True"
+ark_ServerAdminPassword="your-password"
+
+# 服务器设置
+ark_SessionName="My Server"
+ark_MaxPlayers="70"
+
+# 可选：Mod
+# ark_GameModIds="731604991,839162288"
 ```
 
-**重要**：配置通过实例 `.cfg` 文件管理，而不是直接修改 `GameUserSettings.ini`。详见 [CONFIG_UPDATE_GUIDE.md](CONFIG_UPDATE_GUIDE.md)
+**详细配置**：查看 [docs/CONFIGURATION.md](docs/CONFIGURATION.md)
 
-## Usage
+## 使用指南
 
-### Dashboard
-Navigate to the dashboard to see an overview of all server instances with real-time metrics and quick action buttons.
+### 仪表盘
+- 查看所有服务器状态
+- 实时资源监控
+- 快速启动/停止操作
 
-### Server Management
-1. Go to **Servers** page
-2. Click **Install New Server** to add instances
-3. Use action buttons to start/stop/restart servers
-4. Click **Configure** to edit server settings
-5. Click **Update** to check for and apply updates
+### 服务器管理
+- 安装新服务器实例（选择地图）
+- 启动/停止/重启（带确认对话框）
+- 检查并应用更新
 
-### Configuration
-1. Navigate to **Configuration**
-2. Select a server instance
-3. Use tabs to edit different setting categories:
-   - **Basic**: Server name, passwords, max players
-   - **Gameplay**: Multipliers and difficulty
-   - **Advanced**: Raw JSON configuration
-4. Click **Save Configuration**
-5. **重要**：配置保存到 `/etc/arkmanager/instances/<instance>.cfg` 文件
-6. **重启服务器**以应用配置更改
+### 配置管理
+1. 访问 `/config/<instance>`
+2. 修改设置（Basic / Gameplay / Advanced）
+3. 保存配置（写入 .cfg 文件）
+4. **重启服务器**以应用更改
 
-**配置工作原理**：
-- Web UI 修改 `.cfg` 文件中的 `ark_` 参数
-- arkmanager 在启动时读取这些参数
-- 参数转换为服务器启动命令行参数
-- 因此修改后必须重启服务器才能生效
+**重要**：配置修改后必须重启服务器才能生效！
 
-详细说明：[CONFIG_UPDATE_GUIDE.md](CONFIG_UPDATE_GUIDE.md)
+### Mod 管理
+1. 访问 `/mods` 页面
+2. 输入 Steam Workshop Mod ID（如：731604991）
+3. 点击 Install 安装
+4. 在 Configuration → Gameplay 中添加 Mod ID
+5. 重启服务器加载 Mod
 
-### Cluster Setup
-1. Go to **Cluster** page
-2. Enter Cluster ID and Directory
-3. Select server instances to include
-4. Enable cross-server chat if desired
-5. Save configuration
+### RCON 控制台
+- 选择运行中的服务器
+- 使用快捷命令或输入自定义命令
+- 查看命令历史
 
-### RCON Console
-1. Navigate to **RCON** page
-2. Select a running server instance
-3. Use quick command buttons or type commands in the terminal
-4. View command history and responses
+## 部署
 
-### Log Viewer
-1. Go to **Logs** page
-2. Select a server instance
-3. View real-time logs
-4. Use **Pause** to freeze log stream
-5. Use **Clear** to clean up display
+### Docker（推荐）
 
-**Log Locations**:
-- arkmanager logs: `/var/log/arktools/`
-- Server logs: `${arkserverroot}/ShooterGame/Saved/Logs/`
-
-### Mod Management
-1. Go to **Mods** page
-2. Select a server instance
-3. Enter Steam Workshop Mod ID(s) (comma-separated for multiple)
-4. Click **Install** and wait for download
-5. Add Mod IDs to **Configuration** → **Gameplay** → **Game Mod IDs**
-6. **Restart server** to load mods
-
-**Finding Mod IDs**:
-Visit Steam Workshop page, the ID is in the URL:
-`steamcommunity.com/sharedfiles/filedetails/?id=MODID`
-
-## Project Structure
-
-```
-ark-server-manager/
-├── app/                        # Next.js App Router
-│   ├── api/                   # API routes
-│   │   ├── servers/          # Server management endpoints
-│   │   ├── rcon/             # RCON endpoints
-│   │   ├── config/           # Configuration endpoints
-│   │   ├── logs/             # Log streaming
-│   │   ├── cluster/          # Cluster configuration
-│   │   └── events/           # SSE event stream
-│   ├── dashboard/            # Dashboard page
-│   ├── servers/              # Server management page
-│   ├── config/               # Configuration pages
-│   ├── cluster/              # Cluster config page
-│   ├── rcon/                 # RCON management page
-│   ├── logs/                 # Log viewer page
-│   ├── layout.tsx            # Root layout
-│   └── globals.css           # Global styles
-├── components/               # React components
-│   ├── ui/                  # shadcn/ui components
-│   ├── common/              # Shared components
-│   ├── dashboard/           # Dashboard components
-│   ├── servers/             # Server management components
-│   └── rcon/                # RCON components
-├── lib/                     # Utility libraries
-│   ├── ark-manager.ts      # ark-server-tools wrapper
-│   ├── rcon-client.ts      # RCON client manager
-│   ├── system-monitor.ts   # System metrics collector
-│   ├── config-manager.ts   # Config file handler
-│   └── utils.ts            # Utility functions
-├── types/                   # TypeScript type definitions
-│   └── ark.d.ts
-├── Dockerfile              # Docker image definition
-├── docker-compose.yml      # Docker Compose configuration
-├── ecosystem.config.js     # PM2 configuration
-└── README.md               # This file
+```bash
+docker-compose up -d
 ```
 
-## API Endpoints
+### PM2
 
-### Server Management
-- `GET /api/servers` - List all server instances
-- `GET /api/servers/[instance]` - Get instance status
-- `POST /api/servers/[instance]` - Start server
-- `PUT /api/servers/[instance]` - Restart server
-- `DELETE /api/servers/[instance]` - Stop server
-- `POST /api/servers/[instance]/install` - Install server
-- `PUT /api/servers/[instance]/install` - Update server
-- `GET /api/servers/[instance]/install` - Check for updates
+```bash
+npm run build
+pm2 start ecosystem.config.js
+```
 
-### Configuration
-- `GET /api/servers/[instance]/config` - Read configuration
-- `POST /api/servers/[instance]/config` - Save configuration
+## 重要注意事项
+
+### ⚠️ 端口配置
+每个服务器实例必须使用唯一的端口：
+- **共享端口** → 服务器崩溃
+- **共享 RCON 端口** → 卡在 0/0 玩家
+
+建议端口配置：
+```bash
+# 实例 1: Port=7778, QueryPort=27015, RCONPort=32330
+# 实例 2: Port=7780, QueryPort=27017, RCONPort=32332
+# 实例 3: Port=7782, QueryPort=27019, RCONPort=32334
+```
+
+### ⚠️ 配置生效
+- 配置保存到 `/etc/arkmanager/instances/<instance>.cfg`
+- 参数格式：`ark_MaxPlayers="70"`
+- 必须重启服务器才能生效
+
+### ⚠️ 会话名称
+- 避免特殊字符（!、&、[ 等）
+- 或在 GameUserSettings.ini 中手动设置
+
+## 故障排除
+
+### 配置修改不生效
+1. 检查 .cfg 文件是否已更新
+2. 确认已重启服务器
+3. 等待服务器完全启动（状态：Running）
+
+### 端口冲突
+```bash
+# 检查端口配置
+grep "ark_.*Port" /etc/arkmanager/instances/*.cfg
+
+# 确保每个实例端口不同
+```
+
+### RCON 连接失败
+- 确保服务器状态为 "Running"（不是 "Starting"）
+- 检查 `ark_RCONEnabled="True"`
+- 验证 RCON 端口（默认 32330）
+
+## 项目结构
+
+```
+ark_server_tools/
+├── app/                # Next.js App Router
+│   ├── api/           # API 路由（21 个端点）
+│   ├── dashboard/     # 仪表盘
+│   ├── servers/       # 服务器管理
+│   ├── config/        # 配置
+│   ├── mods/          # Mod 管理
+│   ├── cluster/       # 集群
+│   ├── rcon/          # RCON
+│   └── logs/          # 日志
+├── components/        # React 组件
+├── lib/               # 核心库
+│   ├── ark-manager.ts
+│   ├── config-manager.ts
+│   ├── mod-manager.ts
+│   ├── rcon-client.ts
+│   └── system-monitor.ts
+├── docs/              # 文档
+│   └── CONFIGURATION.md
+├── Dockerfile
+├── docker-compose.yml
+└── ecosystem.config.js
+```
+
+## 技术栈
+
+- **前端**: Next.js 15, React 18, TypeScript, Tailwind CSS, shadcn/ui
+- **后端**: Next.js API Routes, ark-server-tools
+- **实时通信**: Server-Sent Events (SSE)
+- **部署**: Docker, PM2
+
+## API 端点
+
+<details>
+<summary>查看所有 API 端点</summary>
+
+### 服务器管理
+- `GET /api/servers` - 列出所有服务器
+- `GET /api/servers/[instance]` - 获取服务器状态
+- `POST /api/servers/[instance]` - 启动服务器
+- `PUT /api/servers/[instance]` - 重启服务器
+- `DELETE /api/servers/[instance]` - 停止服务器
+- `POST /api/servers/[instance]/install` - 安装服务器
+- `PUT /api/servers/[instance]/install` - 更新服务器
+- `GET /api/servers/[instance]/install` - 检查更新
+
+### 配置管理
+- `GET /api/servers/[instance]/config` - 读取配置
+- `POST /api/servers/[instance]/config` - 保存配置
+
+### Mod 管理
+- `GET /api/mods/[instance]` - 列出 Mod
+- `POST /api/mods/[instance]` - 安装 Mod
+- `DELETE /api/mods/[instance]` - 卸载 Mod
+- `GET /api/mods/[instance]/check` - 检查 Mod 更新
 
 ### RCON
-- `POST /api/rcon/[instance]` - Execute RCON command
-- `GET /api/rcon/[instance]` - Get command history
-- `DELETE /api/rcon/[instance]` - Disconnect RCON
+- `POST /api/rcon/[instance]` - 执行 RCON 命令
+- `GET /api/rcon/[instance]` - 获取命令历史
+- `DELETE /api/rcon/[instance]` - 断开 RCON
 
-### Monitoring
-- `GET /api/events` - SSE stream for real-time updates
-- `GET /api/logs/[instance]` - SSE stream for server logs
+### 实时监控
+- `GET /api/events` - SSE 服务器状态流
+- `GET /api/logs/[instance]` - SSE 日志流
 
-### Cluster
-- `GET /api/cluster` - Get cluster configuration
-- `POST /api/cluster` - Save cluster configuration
+### 集群
+- `GET /api/cluster` - 获取集群配置
+- `POST /api/cluster` - 保存集群配置
 
-### Mod Management
-- `GET /api/mods/[instance]` - List installed mods
-- `POST /api/mods/[instance]` - Install mods
-- `DELETE /api/mods/[instance]` - Uninstall mod
-- `GET /api/mods/[instance]/check` - Check for mod updates
+</details>
 
-## Troubleshooting
+## 安全建议
 
-### Web Interface Not Accessible
-- Check if the service is running: `docker ps` or `pm2 status`
-- Verify firewall rules allow port 3000
-- Check logs: `docker logs ark-web-manager` or `pm2 logs`
-
-### arkmanager Commands Not Working
-- Verify ark-server-tools is installed: `which arkmanager`
-- Check permissions: Container must have access to arkmanager
-- Test manually: `docker exec ark-web-manager arkmanager status`
-
-### RCON Connection Failures
-- Verify RCON is enabled in server configuration: `ark_RCONEnabled="True"`
-- Check RCON port is correct (default: 32330)
-- Verify admin password matches: `ark_ServerAdminPassword`
-- Ensure server status is "Running" (not "Starting")
-
-### Server Not Starting
-- Check arkmanager logs: `arkmanager status @instance`
-- Verify server files are installed
-- Check disk space and permissions
-- Review server logs in the Logs page
-
-### Configuration Changes Not Taking Effect
-- **Most common issue**: Forgot to restart the server
-- Verify config file was updated: `cat /etc/arkmanager/instances/<instance>.cfg`
-- Check for `ark_` parameter (e.g., `ark_MaxPlayers="8"`)
-- Restart server: `arkmanager restart @instance` or use Web UI
-- Wait for server to fully start (status: "Running")
-- Verify: `arkmanager status @instance`
-
-See [CONFIG_UPDATE_GUIDE.md](CONFIG_UPDATE_GUIDE.md) for detailed configuration management guide.
-
-### Port Conflicts Between Instances
-- **Critical**: Each instance MUST use unique ports
-- Shared Port or QueryPort → server crashes
-- Shared RCONPort → server hangs at 0/0 players
-- Configure ports in **Configuration** → **Gameplay** → **Port Configuration**
-- Suggested port increments: +2 for each new instance
-
-Example for 3 instances:
-```bash
-# Instance 1
-Port=7778, QueryPort=27015, RCONPort=32330
-
-# Instance 2
-Port=7780, QueryPort=27017, RCONPort=32332
-
-# Instance 3
-Port=7782, QueryPort=27019, RCONPort=32334
-```
-
-See [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md) for detailed information.
-
-## Security Considerations
-
-### Authentication
-This application currently has no built-in authentication. It is recommended to:
-- Deploy behind a reverse proxy with authentication (nginx, Apache)
-- Use a VPN for remote access
-- Configure firewall rules to restrict access
-
-### RCON Security
-- Use strong admin passwords
-- Limit RCON port exposure
-- Use firewalls to restrict RCON access
-
-### File Permissions
-- Ensure proper file ownership for server files
-- Use read-only mounts where appropriate
-- Run containers with appropriate user permissions
-
-## Performance Optimization
-
-### Production Deployment
-- Use PM2 cluster mode to utilize multiple CPU cores
-- Enable Next.js output: standalone in `next.config.js`
-- Configure proper cache headers
-- Use a CDN for static assets
-
-### System Resources
-- Monitor server resource usage in the dashboard
-- Adjust PM2 max_memory_restart based on your system
-- Configure appropriate Docker resource limits
-
-## Contributing
-
-Contributions are welcome! Please follow these guidelines:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+- 无内置认证，建议部署在反向代理（nginx + 认证）后
+- 或使用 VPN 限制访问
+- 使用强 RCON 密码
+- 配置防火墙规则
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - 详见 [LICENSE](LICENSE)
 
-## Acknowledgments
+## 参考资源
 
-- [ark-server-tools](https://github.com/arkmanager/ark-server-tools) - Server management scripts
-- [Next.js](https://nextjs.org/) - React framework
-- [shadcn/ui](https://ui.shadcn.com/) - UI component library
-- ARK: Survival Evolved community
+- [ark-server-tools](https://github.com/arkmanager/ark-server-tools)
+- [Next.js](https://nextjs.org/)
+- [shadcn/ui](https://ui.shadcn.com/)
 
-## Support
+---
 
-For issues and questions:
-- Open an issue on GitHub
-- Check existing issues for solutions
-- Review the troubleshooting section
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
-
-### Version 1.0.0 - 2025-11-01
-- ✅ Dashboard with real-time monitoring
-- ✅ Server management (start/stop/restart/install/update)
-- ✅ Configuration management via .cfg files
-- ✅ **Mod management** (install/uninstall/update check)
-- ✅ RCON console with quick commands
-- ✅ Real-time log viewer
-- ✅ Cluster configuration
-- ✅ Port configuration and validation
-- ✅ Auto-update and backup options
-- ✅ Docker and PM2 deployment support
-- ✅ Comprehensive documentation (9 guides)
-
+**版本**: 1.0.0  
+**快速开始**: [docs/QUICK_START.md](docs/QUICK_START.md)  
+**配置指南**: [docs/CONFIGURATION.md](docs/CONFIGURATION.md)
