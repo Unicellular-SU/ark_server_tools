@@ -93,9 +93,18 @@ export class RconManager {
       const rcon = this.connections.get(instance)
 
       if (rcon) {
-        await rcon.end()
+        // Remove from map first to prevent double disconnect
         this.connections.delete(instance)
-        console.log(`[RCON ${instance}] Disconnected`)
+
+        try {
+          await rcon.end()
+          console.log(`[RCON ${instance}] Disconnected`)
+        } catch (error: any) {
+          // Ignore "End called twice" errors
+          if (error.message !== 'End called twice') {
+            throw error
+          }
+        }
       }
     } catch (error: any) {
       console.error(`Failed to disconnect RCON for ${instance}:`, error)

@@ -12,11 +12,7 @@ export async function POST(
     const { instance } = await params
     const { command, host, port, password } = await request.json()
     
-    // Always disconnect first to avoid "write after end" errors
-    // This ensures we start with a fresh connection
-    await rconManager.disconnect(instance)
-    
-    // Connect with fresh connection
+    // Connect with fresh connection (connect method handles existing connections)
     const connected = await rconManager.connect(
       instance,
       host || 'localhost',
