@@ -36,18 +36,31 @@ export class ArkManager {
     try {
       const { stdout, stderr } = await execAsync(fullCommand)
 
+      // Remove ANSI color codes and other escape sequences
+      const cleanOutput = this.stripAnsiCodes(stdout)
+
       // Log output
-      console.log(`[ARK Manager] Command output (first 200 chars):`, stdout.substring(0, 200))
+      console.log(`[ARK Manager] Command output (first 300 chars):`, cleanOutput.substring(0, 300))
 
       if (stderr && !stderr.includes('Warning')) {
         console.error(`[ARK Manager] Command stderr:`, stderr)
         throw new Error(stderr)
       }
-      return stdout
+      return cleanOutput
     } catch (error: any) {
       console.error(`[ARK Manager] Command failed:`, error.message)
       throw new Error(`Failed to execute command: ${error.message}`)
     }
+  }
+
+  /**
+   * Strip ANSI color codes and escape sequences from output
+   */
+  private stripAnsiCodes(text: string): string {
+    // Remove ANSI escape sequences
+    return text.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
+      .replace(/\x1B\][0-9];.*?\x07/g, '')
+      .replace(/\r/g, '')
   }
 
   /**
@@ -311,7 +324,15 @@ export class ArkManager {
       const config = await this.readInstanceConfig(instanceName)
 
       // Debug: log the status output
-      console.log(`[${instanceName}] Parsing status output:`, statusOutput.substring(0, 200))
+      console.log(`[${instanceName}] Parsing status output:`, statusOutput.substring(0, 300))
+
+      // Debug: check for the exact line we're looking for
+      const lines = statusOutput.split('\n')
+      for (const line of lines) {
+        if (line.toLowerCase().includes('running') || line.toLowerCase().includes('listening')) {
+          console.log(`[${instanceName}] DEBUG Line:`, JSON.stringify(line))
+        }
+      }
 
       // Check if server is running by looking for specific status lines
       // Note: arkmanager output may have multiple spaces
