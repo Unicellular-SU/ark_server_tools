@@ -196,119 +196,118 @@ export default function ConfigPage() {
                 <CardDescription>Adjust multipliers and difficulty</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-medium mb-2">Port Configuration</h3>
-                    <p className="text-xs text-muted-foreground mb-3">
-                      ⚠️ 每个服务器实例必须使用唯一的端口。共享端口会导致服务器崩溃或卡在 0/0 玩家。
-                    </p>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="port">Game Port (UDP)</Label>
-                        <Input
-                          id="port"
-                          type="number"
-                          value={config.Port || 7778}
-                          onChange={(e) => updateConfig('Port', parseInt(e.target.value))}
-                          min="1024"
-                          max="65535"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="queryPort">Query Port (UDP)</Label>
-                        <Input
-                          id="queryPort"
-                          type="number"
-                          value={config.QueryPort || 27015}
-                          onChange={(e) => updateConfig('QueryPort', parseInt(e.target.value))}
-                          min="1024"
-                          max="65535"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="rconPort">RCON Port (TCP)</Label>
-                        <Input
-                          id="rconPort"
-                          type="number"
-                          value={config.RCONPort || 32330}
-                          onChange={(e) => updateConfig('RCONPort', parseInt(e.target.value))}
-                          min="1024"
-                          max="65535"
-                        />
-                      </div>
+                <div>
+                  <h3 className="font-medium mb-2">Port Configuration</h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    ⚠️ 每个服务器实例必须使用唯一的端口。共享端口会导致服务器崩溃或卡在 0/0 玩家。
+                  </p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="port">Game Port (UDP)</Label>
+                      <Input
+                        id="port"
+                        type="number"
+                        value={config.Port || 7778}
+                        onChange={(e) => updateConfig('Port', parseInt(e.target.value))}
+                        min="1024"
+                        max="65535"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="queryPort">Query Port (UDP)</Label>
+                      <Input
+                        id="queryPort"
+                        type="number"
+                        value={config.QueryPort || 27015}
+                        onChange={(e) => updateConfig('QueryPort', parseInt(e.target.value))}
+                        min="1024"
+                        max="65535"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="rconPort">RCON Port (TCP)</Label>
+                      <Input
+                        id="rconPort"
+                        type="number"
+                        value={config.RCONPort || 32330}
+                        onChange={(e) => updateConfig('RCONPort', parseInt(e.target.value))}
+                        min="1024"
+                        max="65535"
+                      />
                     </div>
                   </div>
-                  
-                  <div className="border-t pt-4">
-                    <h3 className="font-medium mb-3">Gameplay Multipliers</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="difficulty">Difficulty Offset (0-1)</Label>
-                        <Input
-                          id="difficulty"
-                          type="number"
-                          step="0.1"
-                          value={config.DifficultyOffset || 0.5}
-                          onChange={(e) => updateConfig('DifficultyOffset', parseFloat(e.target.value))}
-                          min="0"
-                          max="1"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="xpMultiplier">XP Multiplier</Label>
-                        <Input
-                          id="xpMultiplier"
-                          type="number"
-                          step="0.1"
-                          value={config.XPMultiplier || 1.0}
-                          onChange={(e) => updateConfig('XPMultiplier', parseFloat(e.target.value))}
-                          min="0.1"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="tamingSpeed">Taming Speed Multiplier</Label>
-                        <Input
-                          id="tamingSpeed"
-                          type="number"
-                          step="0.1"
-                          value={config.TamingSpeedMultiplier || 1.0}
-                          onChange={(e) => updateConfig('TamingSpeedMultiplier', parseFloat(e.target.value))}
-                          min="0.1"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="harvestAmount">Harvest Amount Multiplier</Label>
-                        <Input
-                          id="harvestAmount"
-                          type="number"
-                          step="0.1"
-                          value={config.HarvestAmountMultiplier || 1.0}
-                          onChange={(e) => updateConfig('HarvestAmountMultiplier', parseFloat(e.target.value))}
-                          min="0.1"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="resourceRespawn">Resource Respawn Period Multiplier</Label>
-                        <Input
-                          id="resourceRespawn"
-                          type="number"
-                          step="0.1"
-                          value={config.ResourcesRespawnPeriodMultiplier || 1.0}
-                          onChange={(e) => updateConfig('ResourcesRespawnPeriodMultiplier', parseFloat(e.target.value))}
-                          min="0.1"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                </div>
                 
                 <div className="border-t pt-4">
-                  <h3 className="font-medium mb-3">Auto-Update & Backup</h3>
+                  <h3 className="font-medium mb-3">Gameplay Multipliers</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="difficulty">Difficulty Offset (0-1)</Label>
+                      <Input
+                        id="difficulty"
+                        type="number"
+                        step="0.1"
+                        value={config.DifficultyOffset || 0.5}
+                        onChange={(e) => updateConfig('DifficultyOffset', parseFloat(e.target.value))}
+                        min="0"
+                        max="1"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="xpMultiplier">XP Multiplier</Label>
+                      <Input
+                        id="xpMultiplier"
+                        type="number"
+                        step="0.1"
+                        value={config.XPMultiplier || 1.0}
+                        onChange={(e) => updateConfig('XPMultiplier', parseFloat(e.target.value))}
+                        min="0.1"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="tamingSpeed">Taming Speed Multiplier</Label>
+                      <Input
+                        id="tamingSpeed"
+                        type="number"
+                        step="0.1"
+                        value={config.TamingSpeedMultiplier || 1.0}
+                        onChange={(e) => updateConfig('TamingSpeedMultiplier', parseFloat(e.target.value))}
+                        min="0.1"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="harvestAmount">Harvest Amount Multiplier</Label>
+                      <Input
+                        id="harvestAmount"
+                        type="number"
+                        step="0.1"
+                        value={config.HarvestAmountMultiplier || 1.0}
+                        onChange={(e) => updateConfig('HarvestAmountMultiplier', parseFloat(e.target.value))}
+                        min="0.1"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="resourceRespawn">Resource Respawn Period Multiplier</Label>
+                      <Input
+                        id="resourceRespawn"
+                        type="number"
+                        step="0.1"
+                        value={config.ResourcesRespawnPeriodMultiplier || 1.0}
+                        onChange={(e) => updateConfig('ResourcesRespawnPeriodMultiplier', parseFloat(e.target.value))}
+                        min="0.1"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="border-t pt-4">
+                  <h3 className="font-medium mb-3">Auto-Update &amp; Backup</h3>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <input
