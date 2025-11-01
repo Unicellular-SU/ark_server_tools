@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  ark-web-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ark-web-manager
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount ark-server-tools configuration directory
+      - /etc/arkmanager:/etc/arkmanager:ro
+      # Mount ARK servers directory
+      - /home/steam/ARK:/ark-servers:rw
+      # Mount cluster data directory
+      - /home/steam/cluster:/cluster:rw
+    environment:
+      - NODE_ENV=production
+      - ARK_TOOLS_PATH=/usr/local/bin/arkmanager
+      - ARK_SERVERS_PATH=/ark-servers
+      - CLUSTER_DATA_PATH=/cluster
+    restart: unless-stopped
+    network_mode: host
+    # Note: network_mode: host allows the container to access ARK servers on the host
+    # Alternative: Use bridge network and expose required ports
+
+  # Optional: Redis for session management (if needed in future)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: ark-redis
+  #   ports:
+  #     - "6379:6379"
+  #   restart: unless-stopped
+
+networks:
+  ark-network:
+    driver: bridge
+
+volumes:
+  cluster-data:
+    driver: local
+
