@@ -14,6 +14,7 @@ export interface ServerInstance {
   uptime?: number
   serverName?: string
   version?: string
+  mods?: string[]
 }
 
 export interface ServerMetrics {
@@ -36,6 +37,12 @@ export interface ServerConfig {
   ServerAdminPassword?: string
   MaxPlayers?: number
   
+  // Ports
+  Port?: number
+  QueryPort?: number
+  RCONPort?: number
+  RCONEnabled?: boolean
+  
   // Gameplay Settings
   DifficultyOffset?: number
   XPMultiplier?: number
@@ -52,9 +59,30 @@ export interface ServerConfig {
   // Cluster Settings
   ClusterId?: string
   ClusterDirOverride?: string
+  AltSaveDirectoryName?: string
   
-  // Custom Game.ini settings
+  // Auto-update and Backup
+  AutoUpdateOnStart?: boolean
+  BackupPreUpdate?: boolean
+  AlwaysRestartOnCrash?: boolean
+  
+  // Mods
+  GameModIds?: string
+  MapModId?: string
+  TotalConversionId?: string
+  
+  // Map
+  serverMap?: string
+  
+  // Custom settings
   [key: string]: any
+}
+
+export interface ModInfo {
+  modId: string
+  name?: string
+  enabled: boolean
+  type: 'game' | 'map' | 'tc' | 'disabled'
 }
 
 export interface ClusterConfig {
@@ -97,6 +125,7 @@ export interface ApiResponse<T> {
   success: boolean
   data?: T
   error?: string
+  message?: string
 }
 
 export interface ServerEvent {
@@ -106,3 +135,8 @@ export interface ServerEvent {
   timestamp: number
 }
 
+export interface PortConflict {
+  port: number
+  type: 'Port' | 'QueryPort' | 'RCONPort'
+  instances: string[]
+}

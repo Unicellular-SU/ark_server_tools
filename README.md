@@ -277,6 +277,22 @@ Navigate to the dashboard to see an overview of all server instances with real-t
 4. Use **Pause** to freeze log stream
 5. Use **Clear** to clean up display
 
+**Log Locations**:
+- arkmanager logs: `/var/log/arktools/`
+- Server logs: `${arkserverroot}/ShooterGame/Saved/Logs/`
+
+### Mod Management
+1. Go to **Mods** page
+2. Select a server instance
+3. Enter Steam Workshop Mod ID(s) (comma-separated for multiple)
+4. Click **Install** and wait for download
+5. Add Mod IDs to **Configuration** → **Gameplay** → **Game Mod IDs**
+6. **Restart server** to load mods
+
+**Finding Mod IDs**:
+Visit Steam Workshop page, the ID is in the URL:
+`steamcommunity.com/sharedfiles/filedetails/?id=MODID`
+
 ## Project Structure
 
 ```
@@ -346,6 +362,12 @@ ark-server-manager/
 - `GET /api/cluster` - Get cluster configuration
 - `POST /api/cluster` - Save cluster configuration
 
+### Mod Management
+- `GET /api/mods/[instance]` - List installed mods
+- `POST /api/mods/[instance]` - Install mods
+- `DELETE /api/mods/[instance]` - Uninstall mod
+- `GET /api/mods/[instance]/check` - Check for mod updates
+
 ## Troubleshooting
 
 ### Web Interface Not Accessible
@@ -379,6 +401,27 @@ ark-server-manager/
 - Verify: `arkmanager status @instance`
 
 See [CONFIG_UPDATE_GUIDE.md](CONFIG_UPDATE_GUIDE.md) for detailed configuration management guide.
+
+### Port Conflicts Between Instances
+- **Critical**: Each instance MUST use unique ports
+- Shared Port or QueryPort → server crashes
+- Shared RCONPort → server hangs at 0/0 players
+- Configure ports in **Configuration** → **Gameplay** → **Port Configuration**
+- Suggested port increments: +2 for each new instance
+
+Example for 3 instances:
+```bash
+# Instance 1
+Port=7778, QueryPort=27015, RCONPort=32330
+
+# Instance 2
+Port=7780, QueryPort=27017, RCONPort=32332
+
+# Instance 3
+Port=7782, QueryPort=27019, RCONPort=32334
+```
+
+See [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md) for detailed information.
 
 ## Security Considerations
 
@@ -441,13 +484,18 @@ For issues and questions:
 
 ## Changelog
 
-### Version 1.0.0
-- Initial release
-- Dashboard with real-time monitoring
-- Server management (start/stop/restart/install/update)
-- Configuration management
-- RCON console
-- Log viewer
-- Cluster configuration
-- Docker and PM2 deployment support
+See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
+
+### Version 1.0.0 - 2025-11-01
+- ✅ Dashboard with real-time monitoring
+- ✅ Server management (start/stop/restart/install/update)
+- ✅ Configuration management via .cfg files
+- ✅ **Mod management** (install/uninstall/update check)
+- ✅ RCON console with quick commands
+- ✅ Real-time log viewer
+- ✅ Cluster configuration
+- ✅ Port configuration and validation
+- ✅ Auto-update and backup options
+- ✅ Docker and PM2 deployment support
+- ✅ Comprehensive documentation (9 guides)
 

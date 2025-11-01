@@ -25,9 +25,12 @@ export class ConfigManager {
         const trimmed = line.trim()
         if (!trimmed || trimmed.startsWith('#')) continue
         
-        // Match ark_ parameters or serverMap
+        // Match ark_ parameters, serverMap, or arkAutoUpdateOnStart, arkBackupPreUpdate, arkAlwaysRestartOnCrash
         const arkMatch = trimmed.match(/^ark_([^=]+)=(.+)$/)
         const serverMapMatch = trimmed.match(/^serverMap=(.+)$/)
+        const arkAutoUpdateMatch = trimmed.match(/^arkAutoUpdateOnStart=(.+)$/)
+        const arkBackupPreUpdateMatch = trimmed.match(/^arkBackupPreUpdate=(.+)$/)
+        const arkAlwaysRestartMatch = trimmed.match(/^arkAlwaysRestartOnCrash=(.+)$/)
         
         let key: string | null = null
         let value: string | null = null
@@ -38,6 +41,15 @@ export class ConfigManager {
         } else if (serverMapMatch) {
           key = 'serverMap'
           value = serverMapMatch[1].trim()
+        } else if (arkAutoUpdateMatch) {
+          key = 'AutoUpdateOnStart'
+          value = arkAutoUpdateMatch[1].trim()
+        } else if (arkBackupPreUpdateMatch) {
+          key = 'BackupPreUpdate'
+          value = arkBackupPreUpdateMatch[1].trim()
+        } else if (arkAlwaysRestartMatch) {
+          key = 'AlwaysRestartOnCrash'
+          value = arkAlwaysRestartMatch[1].trim()
         }
         
         if (key && value !== null) {
@@ -140,6 +152,30 @@ export class ConfigManager {
           const comment = commentMatch ? `                               ${commentMatch[1]}` : ''
           updatedLines.push(`serverMap=${formattedValue}${comment}`)
           processedKeys.add('serverMap')
+        } else if (trimmed.match(/^arkAutoUpdateOnStart=/)) {
+          if (config.AutoUpdateOnStart !== undefined) {
+            const value = config.AutoUpdateOnStart ? 'true' : 'false'
+            updatedLines.push(`arkAutoUpdateOnStart="${value}"`)
+            processedKeys.add('AutoUpdateOnStart')
+          } else {
+            updatedLines.push(line)
+          }
+        } else if (trimmed.match(/^arkBackupPreUpdate=/)) {
+          if (config.BackupPreUpdate !== undefined) {
+            const value = config.BackupPreUpdate ? 'true' : 'false'
+            updatedLines.push(`arkBackupPreUpdate="${value}"`)
+            processedKeys.add('BackupPreUpdate')
+          } else {
+            updatedLines.push(line)
+          }
+        } else if (trimmed.match(/^arkAlwaysRestartOnCrash=/)) {
+          if (config.AlwaysRestartOnCrash !== undefined) {
+            const value = config.AlwaysRestartOnCrash ? 'true' : 'false'
+            updatedLines.push(`arkAlwaysRestartOnCrash="${value}"`)
+            processedKeys.add('AlwaysRestartOnCrash')
+          } else {
+            updatedLines.push(line)
+          }
         } else {
           // Keep non-ark lines (like arkserverroot, etc.)
           updatedLines.push(line)
@@ -147,11 +183,27 @@ export class ConfigManager {
       }
       
       // Add new config entries that weren't in the file
+      const specialKeys = ['serverMap', 'AutoUpdateOnStart', 'BackupPreUpdate', 'AlwaysRestartOnCrash']
+      
       for (const [key, value] of Object.entries(config)) {
-        if (!processedKeys.has(key) && key !== 'serverMap') {
+        if (!processedKeys.has(key) && !specialKeys.includes(key)) {
           const formattedValue = typeof value === 'string' ? `"${value}"` : value
           updatedLines.push(`ark_${key}=${formattedValue}`)
         }
+      }
+      
+      // Add special keys if not processed
+      if (!processedKeys.has('AutoUpdateOnStart') && config.AutoUpdateOnStart !== undefined) {
+        const value = config.AutoUpdateOnStart ? 'true' : 'false'
+        updatedLines.push(`arkAutoUpdateOnStart="${value}"`)
+      }
+      if (!processedKeys.has('BackupPreUpdate') && config.BackupPreUpdate !== undefined) {
+        const value = config.BackupPreUpdate ? 'true' : 'false'
+        updatedLines.push(`arkBackupPreUpdate="${value}"`)
+      }
+      if (!processedKeys.has('AlwaysRestartOnCrash') && config.AlwaysRestartOnCrash !== undefined) {
+        const value = config.AlwaysRestartOnCrash ? 'true' : 'false'
+        updatedLines.push(`arkAlwaysRestartOnCrash="${value}"`)
       }
       
       const newContent = updatedLines.join('\n')
@@ -278,6 +330,22 @@ export class ConfigManager {
       if (config[key] !== undefined && config[key] < 0) {
         errors.push(`${key} must be a positive number`)
       }
+    }
+
+    // Validate ports (must be in valid range)
+    if (config.Port !== undefined && (config.Port < 1024 || config.Port > 65535)) {
+      errors.push('Port must be between 1024 and 65535')
+    }
+    if (config.QueryPort !== undefined && (config.QueryPort < 1024 || config.QueryPort > 65535)) {
+      errors.push('QueryPort must be between 1024 and 65535')
+    }
+    if (config.RCONPort !== undefined && (config.RCONPort < 1024 || config.RCONPort > 65535)) {
+      errors.push('RCONPort must be between 1024 and 65535')
+    }
+
+    // Validate session name (warn about special characters)
+    if (config.SessionName && /[!@#$%^&*()+=\[\]{}|\\;:<>?]/.test(config.SessionName)) {
+      errors.push('SessionName contains special characters which may cause issues. Consider defining it in GameUserSettings.ini instead.')
     }
 
     return {

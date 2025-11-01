@@ -132,6 +132,11 @@ export default function ConfigPage() {
                 <CardDescription>Configure basic server information</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                  <p className="text-xs text-yellow-900">
+                    <strong>提示：</strong>服务器名称如果包含特殊字符（如 !、&、[ 等），建议不要在此设置，而是直接在 GameUserSettings.ini 文件中定义。
+                  </p>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="sessionName">Server Name</Label>
@@ -141,6 +146,9 @@ export default function ConfigPage() {
                       onChange={(e) => updateConfig('SessionName', e.target.value)}
                       placeholder="My ARK Server"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      避免使用特殊字符
+                    </p>
                   </div>
                   
                   <div className="space-y-2">
@@ -188,7 +196,54 @@ export default function ConfigPage() {
                 <CardDescription>Adjust multipliers and difficulty</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-medium mb-2">Port Configuration</h3>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      ⚠️ 每个服务器实例必须使用唯一的端口。共享端口会导致服务器崩溃或卡在 0/0 玩家。
+                    </p>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="port">Game Port (UDP)</Label>
+                        <Input
+                          id="port"
+                          type="number"
+                          value={config.Port || 7778}
+                          onChange={(e) => updateConfig('Port', parseInt(e.target.value))}
+                          min="1024"
+                          max="65535"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="queryPort">Query Port (UDP)</Label>
+                        <Input
+                          id="queryPort"
+                          type="number"
+                          value={config.QueryPort || 27015}
+                          onChange={(e) => updateConfig('QueryPort', parseInt(e.target.value))}
+                          min="1024"
+                          max="65535"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="rconPort">RCON Port (TCP)</Label>
+                        <Input
+                          id="rconPort"
+                          type="number"
+                          value={config.RCONPort || 32330}
+                          onChange={(e) => updateConfig('RCONPort', parseInt(e.target.value))}
+                          min="1024"
+                          max="65535"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="border-t pt-4">
+                    <h3 className="font-medium mb-3">Gameplay Multipliers</h3>
+                    <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="difficulty">Difficulty Offset (0-1)</Label>
                     <Input
@@ -238,16 +293,81 @@ export default function ConfigPage() {
                     />
                   </div>
                   
+                    <div className="space-y-2">
+                      <Label htmlFor="resourceRespawn">Resource Respawn Period Multiplier</Label>
+                      <Input
+                        id="resourceRespawn"
+                        type="number"
+                        step="0.1"
+                        value={config.ResourcesRespawnPeriodMultiplier || 1.0}
+                        onChange={(e) => updateConfig('ResourcesRespawnPeriodMultiplier', parseFloat(e.target.value))}
+                        min="0.1"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="border-t pt-4">
+                  <h3 className="font-medium mb-3">Auto-Update & Backup</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="autoUpdate"
+                        checked={config.AutoUpdateOnStart || false}
+                        onChange={(e) => updateConfig('AutoUpdateOnStart', e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="autoUpdate" className="font-normal">
+                        Auto-update on server start
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="backupPreUpdate"
+                        checked={config.BackupPreUpdate || false}
+                        onChange={(e) => updateConfig('BackupPreUpdate', e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="backupPreUpdate" className="font-normal">
+                        Backup before update
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="alwaysRestart"
+                        checked={config.AlwaysRestartOnCrash || false}
+                        onChange={(e) => updateConfig('AlwaysRestartOnCrash', e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="alwaysRestart" className="font-normal">
+                        Always restart on crash
+                      </Label>
+                    </div>
+                    
+                    <p className="text-xs text-muted-foreground mt-2">
+                      这些设置对应 arkmanager.cfg 中的 arkAutoUpdateOnStart, arkBackupPreUpdate, arkAlwaysRestartOnCrash
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="border-t pt-4">
+                  <h3 className="font-medium mb-3">Mods</h3>
                   <div className="space-y-2">
-                    <Label htmlFor="resourceRespawn">Resource Respawn Period Multiplier</Label>
+                    <Label htmlFor="gameMods">Game Mod IDs (逗号分隔)</Label>
                     <Input
-                      id="resourceRespawn"
-                      type="number"
-                      step="0.1"
-                      value={config.ResourcesRespawnPeriodMultiplier || 1.0}
-                      onChange={(e) => updateConfig('ResourcesRespawnPeriodMultiplier', parseFloat(e.target.value))}
-                      min="0.1"
+                      id="gameMods"
+                      value={config.GameModIds || ''}
+                      onChange={(e) => updateConfig('GameModIds', e.target.value)}
+                      placeholder="123456,789012,345678"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      输入 Steam Workshop Mod ID，用逗号分隔。例如：487516323,487516324
+                    </p>
                   </div>
                 </div>
               </CardContent>

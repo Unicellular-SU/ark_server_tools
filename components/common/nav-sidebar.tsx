@@ -8,7 +8,8 @@ import {
   Settings, 
   Network, 
   Terminal, 
-  ScrollText 
+  ScrollText,
+  Puzzle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -16,6 +17,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Servers', href: '/servers', icon: Server },
   { name: 'Configuration', href: '/config', icon: Settings },
+  { name: 'Mods', href: '/mods', icon: Puzzle },
   { name: 'Cluster', href: '/cluster', icon: Network },
   { name: 'RCON', href: '/rcon', icon: Terminal },
   { name: 'Logs', href: '/logs', icon: ScrollText },
@@ -32,7 +34,7 @@ export function NavSidebar() {
       
       <nav className="flex-1 space-y-1 px-2 py-4">
         {navigation.map((item) => {
-          const isActive = pathname === item.href
+          const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
           return (
             <Link
               key={item.name}
@@ -58,8 +60,8 @@ export function NavSidebar() {
       
       <div className="border-t border-gray-800 p-4">
         <p className="text-xs text-gray-400">Version 1.0.0</p>
+        <p className="text-xs text-gray-500 mt-1">ark-server-tools integration</p>
       </div>
     </div>
   )
 }
-

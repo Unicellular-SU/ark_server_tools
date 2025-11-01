@@ -14,9 +14,11 @@ export async function GET(
   
   const stream = new ReadableStream({
     async start(controller) {
-      // This is a simplified implementation
-      // In production, you would tail the actual log file
-      const logPath = `/path/to/ark/servers/${instance}/ShooterGame/Saved/Logs/ShooterGame.log`
+      // arkmanager logs are in /var/log/arktools
+      // Server logs are in ${arkserverroot}/ShooterGame/Saved/Logs/
+      const arkserverRoot = process.env.ARK_SERVERS_PATH || '/home/steam/ARK'
+      const logPath = `${arkserverRoot}/ShooterGame/Saved/Logs/ShooterGame.log`
+      const arkToolsLog = '/var/log/arktools/main.log'
       
       try {
         let lastSize = 0
