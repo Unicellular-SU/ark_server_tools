@@ -1,4 +1,4 @@
-import Rcon from 'simple-rcon'
+import { Rcon } from 'rcon-client'
 import type { RconCommand } from '@/types/ark'
 
 /**
@@ -38,6 +38,7 @@ export class RconManager {
         this.commandHistory.set(instance, [])
       }
 
+      console.log(`[RCON ${instance}] Connected to ${host}:${port}`)
       return true
     } catch (error: any) {
       console.error(`Failed to connect to RCON for ${instance}:`, error)
@@ -56,29 +57,11 @@ export class RconManager {
         throw new Error(`No RCON connection for instance: ${instance}`)
       }
 
-      const rawResponse = await rcon.exec(command)
-
-      // Handle response from simple-rcon
-      // simple-rcon can return: string, object with body property, or other formats
-      let response: string
-
-      if (typeof rawResponse === 'string') {
-        response = rawResponse
-      } else if (rawResponse && typeof rawResponse === 'object') {
-        // Try to extract the actual response from the object
-        // simple-rcon may return an object with various properties
-        response = (rawResponse as any).body ||
-          (rawResponse as any).message ||
-          (rawResponse as any).response ||
-          JSON.stringify(rawResponse)
-      } else {
-        response = 'Command executed successfully'
-      }
+      // rcon-client returns a string directly
+      const response = await rcon.send(command)
 
       console.log(`[RCON ${instance}] Command: ${command}`)
-      console.log(`[RCON ${instance}] Response type:`, typeof rawResponse)
-      console.log(`[RCON ${instance}] Raw response:`, rawResponse)
-      console.log(`[RCON ${instance}] Parsed response:`, response)
+      console.log(`[RCON ${instance}] Response:`, response)
 
       // Add to command history
       const history = this.commandHistory.get(instance) || []
@@ -110,8 +93,9 @@ export class RconManager {
       const rcon = this.connections.get(instance)
 
       if (rcon) {
-        await rcon.close()
+        await rcon.end()
         this.connections.delete(instance)
+        console.log(`[RCON ${instance}] Disconnected`)
       }
     } catch (error: any) {
       console.error(`Failed to disconnect RCON for ${instance}:`, error)
