@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { readFile, writeFile } from 'fs/promises'
-import type { ClusterConfig } from '@/types/ark'
+import { readFile, writeFile, mkdir } from 'fs/promises'
+import { clusterManager } from '@/lib/cluster-manager'
+import type { ClusterConfig, ApiResponse } from '@/types/ark'
+import { dirname } from 'path'
 
-const CLUSTER_CONFIG_PATH = '/etc/arkmanager/cluster-config.json'
+const CLUSTER_CONFIG_PATH = process.env.CLUSTER_CONFIG_PATH || '/etc/arkmanager/cluster-config.json'
 
 /**
  * GET /api/cluster - Get cluster configuration
@@ -35,22 +37,47 @@ export async function GET() {
 
 /**
  * POST /api/cluster - Save cluster configuration
+ * This endpoint saves the cluster metadata only
+ * To apply configuration to instances, use /api/cluster/apply
  */
 export async function POST(request: NextRequest) {
   try {
     const config: ClusterConfig = await request.json()
     
+    // Validate configuration
+    const validation = clusterManager.validateClusterConfig(config)
+    if (!validation.valid) {
+      const response: ApiResponse<null> = {
+        success: false,
+        error: `Invalid configuration: ${validation.errors.join(', ')}`
+      }
+      return NextResponse.json(response, { status: 400 })
+    }
+
+    // Ensure the config directory exists
+    try {
+      const configDir = dirname(CLUSTER_CONFIG_PATH)
+      await mkdir(configDir, { recursive: true, mode: 0o755 })
+    } catch (error) {
+      // Directory might already exist, ignore
+    }
+
+    // Save configuration
     await writeFile(CLUSTER_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8')
     
-    return NextResponse.json({
+    const response: ApiResponse<null> = {
       success: true,
-      message: 'Cluster configuration saved successfully'
-    })
+      message: 'Cluster configuration saved. Use "Apply to Servers" to update instance configurations.'
+    }
+    
+    return NextResponse.json(response)
   } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    )
+    console.error('[Cluster API] Error saving configuration:', error)
+    const response: ApiResponse<null> = {
+      success: false,
+      error: error.message
+    }
+    return NextResponse.json(response, { status: 500 })
   }
 }
 

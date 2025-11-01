@@ -22,7 +22,10 @@ export async function POST(
       maxPlayers,
       port,
       queryPort,
-      rconPort
+      rconPort,
+      joinCluster,
+      clusterId,
+      clusterDir
     } = body
 
     // Validate required parameters
@@ -104,6 +107,14 @@ export async function POST(
       QueryPort: queryPort,
       MaxPlayers: maxPlayers || 70,
       ServerPassword: serverPassword || ''
+    }
+
+    // Add cluster settings if joining a cluster
+    if (joinCluster && clusterId && clusterDir) {
+      serverConfig.ClusterId = clusterId
+      serverConfig.ClusterDirOverride = clusterDir
+      serverConfig.AltSaveDirectoryName = instance
+      console.log(`[Install] Adding to cluster: ${clusterId}`)
     }
 
     console.log(`[Install] Creating config file for instance: ${instance}`)

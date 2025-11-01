@@ -31,6 +31,10 @@ export interface InstallConfig {
   port: number
   queryPort: number
   rconPort: number
+  // Cluster settings
+  joinCluster?: boolean
+  clusterId?: string
+  clusterDir?: string
 }
 
 interface InstallDialogProps {
@@ -63,6 +67,10 @@ export function InstallDialog({ open, onOpenChange, onInstall }: InstallDialogPr
   const [port, setPort] = useState(7778)
   const [queryPort, setQueryPort] = useState(27015)
   const [rconPort, setRconPort] = useState(32330)
+  // Cluster settings
+  const [joinCluster, setJoinCluster] = useState(false)
+  const [clusterId, setClusterId] = useState('')
+  const [clusterDir, setClusterDir] = useState(process.env.NEXT_PUBLIC_CLUSTER_DATA_PATH || '/home/steam/cluster')
 
   // Auto-generate session name based on instance name
   useEffect(() => {
@@ -82,7 +90,10 @@ export function InstallDialog({ open, onOpenChange, onInstall }: InstallDialogPr
         maxPlayers,
         port,
         queryPort,
-        rconPort
+        rconPort,
+        joinCluster,
+        clusterId: joinCluster ? clusterId : undefined,
+        clusterDir: joinCluster ? clusterDir : undefined
       }
       onInstall(config)
       // Reset form
@@ -95,12 +106,16 @@ export function InstallDialog({ open, onOpenChange, onInstall }: InstallDialogPr
       setPort(7778)
       setQueryPort(27015)
       setRconPort(32330)
+      setJoinCluster(false)
+      setClusterId('')
+      setClusterDir(process.env.NEXT_PUBLIC_CLUSTER_DATA_PATH || '/home/steam/cluster')
       onOpenChange(false)
     }
   }
 
   const isFormValid = instanceName.trim() && adminPassword.trim() && 
-                      port > 0 && queryPort > 0 && rconPort > 0 && maxPlayers > 0
+                      port > 0 && queryPort > 0 && rconPort > 0 && maxPlayers > 0 &&
+                      (!joinCluster || (clusterId.trim() && clusterDir.trim()))
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -113,9 +128,10 @@ export function InstallDialog({ open, onOpenChange, onInstall }: InstallDialogPr
         </DialogHeader>
         
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="basic">Basic Settings</TabsTrigger>
             <TabsTrigger value="network">Network & Ports</TabsTrigger>
+            <TabsTrigger value="cluster">Cluster (Optional)</TabsTrigger>
           </TabsList>
           
           <TabsContent value="basic" className="space-y-4">
@@ -255,6 +271,69 @@ export function InstallDialog({ open, onOpenChange, onInstall }: InstallDialogPr
                 Common pattern: Instance 1 uses 7778/27015/32330, Instance 2 uses 7779/27016/32331, etc.
               </p>
             </div>
+          </TabsContent>
+
+          <TabsContent value="cluster" className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="join-cluster"
+                  checked={joinCluster}
+                  onChange={(e) => setJoinCluster(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="join-cluster">Join Existing Cluster</Label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Enable to add this server to an existing cluster for cross-server transfers
+              </p>
+            </div>
+
+            {joinCluster && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="cluster-id">Cluster ID *</Label>
+                  <Input
+                    id="cluster-id"
+                    value={clusterId}
+                    onChange={(e) => setClusterId(e.target.value)}
+                    placeholder="mycluster"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Must match the cluster ID of other servers in the cluster
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cluster-dir">Cluster Directory *</Label>
+                  <Input
+                    id="cluster-dir"
+                    value={clusterDir}
+                    onChange={(e) => setClusterDir(e.target.value)}
+                    placeholder="/home/steam/cluster"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Shared directory path where cluster data is stored
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-blue-50 p-4 border border-blue-200">
+                  <p className="text-sm font-medium text-blue-800">ℹ️ Cluster Configuration</p>
+                  <p className="text-xs text-blue-700 mt-1">
+                    This server will be configured with ClusterId and ClusterDirOverride settings.
+                    All servers in the same cluster must share the same cluster ID and directory.
+                  </p>
+                </div>
+              </>
+            )}
+
+            {!joinCluster && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>This server will not be part of a cluster.</p>
+                <p className="text-sm mt-2">You can add it to a cluster later from the Cluster Configuration page.</p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 

@@ -8,8 +8,25 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { Save, Network } from 'lucide-react'
+import { ClusterStatusCard } from '@/components/cluster/cluster-status-card'
+import { Save, Network, Play, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
 import type { ClusterConfig, ServerInstance } from '@/types/ark'
+
+interface ApplyResult {
+  instance: string
+  success: boolean
+  error?: string
+}
+
+interface ClusterStatus {
+  configured: Array<{
+    instance: string
+    clusterId: string
+    clusterDir: string
+    status: string
+  }>
+  notConfigured: string[]
+}
 
 export default function ClusterPage() {
   const [config, setConfig] = useState<ClusterConfig>({
@@ -22,12 +39,18 @@ export default function ClusterPage() {
     }
   })
   const [servers, setServers] = useState<ServerInstance[]>([])
+  const [clusterStatus, setClusterStatus] = useState<ClusterStatus | null>(null)
   const [saving, setSaving] = useState(false)
+  const [applying, setApplying] = useState(false)
+  const [restarting, setRestarting] = useState(false)
+  const [applyResults, setApplyResults] = useState<ApplyResult[]>([])
+  const [needsRestart, setNeedsRestart] = useState<string[]>([])
   const { toast } = useToast()
 
   useEffect(() => {
     fetchClusterConfig()
     fetchServers()
+    fetchClusterStatus()
   }, [])
 
   const fetchClusterConfig = async () => {
@@ -53,6 +76,19 @@ export default function ClusterPage() {
       }
     } catch (error) {
       console.error('Failed to fetch servers:', error)
+    }
+  }
+
+  const fetchClusterStatus = async () => {
+    try {
+      const response = await fetch('/api/cluster/status')
+      const data = await response.json()
+      
+      if (data.success) {
+        setClusterStatus(data.data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch cluster status:', error)
     }
   }
 
@@ -82,6 +118,101 @@ export default function ClusterPage() {
     }
   }
 
+  const handleApplyConfiguration = async () => {
+    if (!config.clusterId || !config.clusterDir) {
+      toast({
+        title: 'Validation Error',
+        description: 'Cluster ID and Directory are required',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    if (config.instances.length === 0) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please select at least one instance',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    try {
+      setApplying(true)
+      setApplyResults([])
+      setNeedsRestart([])
+
+      const response = await fetch('/api/cluster/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      })
+      const data = await response.json()
+      
+      if (data.success || data.data) {
+        setApplyResults(data.data.results || [])
+        setNeedsRestart(data.data.needsRestart || [])
+        
+        toast({
+          title: data.success ? 'Success' : 'Partial Success',
+          description: data.message,
+          variant: data.success ? 'default' : 'destructive'
+        })
+
+        // Refresh status
+        await fetchClusterStatus()
+      } else {
+        toast({
+          title: 'Error',
+          description: data.error || 'Failed to apply configuration',
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to apply cluster configuration',
+        variant: 'destructive'
+      })
+    } finally {
+      setApplying(false)
+    }
+  }
+
+  const handleRestartInstances = async () => {
+    if (needsRestart.length === 0) return
+
+    try {
+      setRestarting(true)
+      
+      const results = await Promise.allSettled(
+        needsRestart.map(instance =>
+          fetch(`/api/servers/${instance}`, { method: 'PUT' })
+        )
+      )
+
+      const successful = results.filter(r => r.status === 'fulfilled').length
+      
+      toast({
+        title: 'Restart Complete',
+        description: `Restarted ${successful}/${needsRestart.length} instances`,
+        variant: successful === needsRestart.length ? 'default' : 'destructive'
+      })
+
+      setNeedsRestart([])
+      await fetchServers()
+      await fetchClusterStatus()
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to restart instances',
+        variant: 'destructive'
+      })
+    } finally {
+      setRestarting(false)
+    }
+  }
+
   const toggleInstance = (instanceName: string) => {
     setConfig(prev => ({
       ...prev,
@@ -99,11 +230,100 @@ export default function ClusterPage() {
             <h1 className="text-3xl font-bold">Cluster Configuration</h1>
             <p className="text-muted-foreground">Configure server clustering for cross-server transfers</p>
           </div>
-          <Button onClick={handleSave} disabled={saving}>
-            <Save className="mr-2 h-4 w-4" />
-            {saving ? 'Saving...' : 'Save Configuration'}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleSave} disabled={saving} variant="outline">
+              <Save className="mr-2 h-4 w-4" />
+              {saving ? 'Saving...' : 'Save Config'}
+            </Button>
+            <Button 
+              onClick={handleApplyConfiguration} 
+              disabled={applying || !config.clusterId || !config.clusterDir}
+            >
+              <Network className="mr-2 h-4 w-4" />
+              {applying ? 'Applying...' : 'Apply to Servers'}
+            </Button>
+          </div>
         </div>
+
+        {/* Cluster Status Card */}
+        {clusterStatus && (
+          <ClusterStatusCard
+            clusterId={config.clusterId}
+            clusterDir={config.clusterDir}
+            configured={clusterStatus.configured}
+            notConfigured={clusterStatus.notConfigured}
+          />
+        )}
+
+        {/* Apply Results */}
+        {applyResults.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Configuration Results</CardTitle>
+              <CardDescription>
+                Results from applying cluster configuration to instances
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                {applyResults.map((result) => (
+                  <div 
+                    key={result.instance}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      {result.success ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-red-500" />
+                      )}
+                      <span className="font-medium">{result.instance}</span>
+                    </div>
+                    {result.error && (
+                      <span className="text-sm text-red-500">{result.error}</span>
+                    )}
+                    {result.success && (
+                      <Badge variant="success">Applied</Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Restart Warning */}
+        {needsRestart.length > 0 && (
+          <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+                <AlertTriangle className="h-5 w-5" />
+                Restart Required
+              </CardTitle>
+              <CardDescription className="text-yellow-700 dark:text-yellow-300">
+                The following instances need to be restarted for cluster changes to take effect
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {needsRestart.map((instance) => (
+                  <Badge key={instance} variant="warning">
+                    {instance}
+                  </Badge>
+                ))}
+              </div>
+              <Button 
+                onClick={handleRestartInstances} 
+                disabled={restarting}
+                variant="outline"
+                className="w-full"
+              >
+                <Play className="mr-2 h-4 w-4" />
+                {restarting ? 'Restarting...' : `Restart ${needsRestart.length} Instance(s)`}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
