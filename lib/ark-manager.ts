@@ -58,8 +58,8 @@ export class ArkManager {
   async getInstanceStatus(instance: string): Promise<ServerInstance | null> {
     try {
       const output = await this.executeCommand(`status @${instance}`)
-      const instances = this.parseStatusOutput(output)
-      return instances.find(i => i.name === instance) || null
+      // Parse the status output for this specific instance
+      return await this.parseInstanceStatus(instance, output)
     } catch (error: any) {
       console.error(`Error getting status for ${instance}:`, error)
       return null
@@ -175,29 +175,49 @@ export class ArkManager {
 
   /**
    * Read instance configuration file
+   * Properly handles bash-style config with quotes and inline comments
    */
   async readInstanceConfig(instance: string): Promise<Record<string, any>> {
     try {
       const configPath = `${this.instanceConfigDir}/${instance}.cfg`
       const content = await readFile(configPath, 'utf-8')
       const config: Record<string, any> = {}
-
+      
       // Parse bash-style config file
       const lines = content.split('\n')
       for (const line of lines) {
         const trimmed = line.trim()
         if (!trimmed || trimmed.startsWith('#')) continue
-
+        
         const match = trimmed.match(/^([^=]+)=(.+)$/)
         if (match) {
           const key = match[1].trim()
           let value = match[2].trim()
-          // Remove quotes if present
+          
+          // Check if value is quoted
+          if ((value.startsWith('"') && value.includes('"', 1)) || 
+              (value.startsWith("'") && value.includes("'", 1))) {
+            // Extract content between quotes (handles inline comments after closing quote)
+            const quoteChar = value[0]
+            const closeQuoteIndex = value.indexOf(quoteChar, 1)
+            if (closeQuoteIndex !== -1) {
+              value = value.substring(1, closeQuoteIndex)
+            }
+          } else {
+            // If no quotes, remove inline comments
+            const commentIndex = value.indexOf('#')
+            if (commentIndex !== -1) {
+              value = value.substring(0, commentIndex).trim()
+            }
+          }
+          
+          // Final cleanup: remove any remaining quotes
           value = value.replace(/^["']|["']$/g, '')
+          
           config[key] = value
         }
       }
-
+      
       return config
     } catch (error) {
       console.error(`Error reading config for ${instance}:`, error)
@@ -294,26 +314,35 @@ export class ArkManager {
 
   /**
    * Parse status for a single instance
+   * Properly parses arkmanager status output format:
+   * - Server running: Yes/No
+   * - Server listening: Yes/No
+   * - PID: <number>
+   * - Players: <count>/<max>
    */
   private async parseInstanceStatus(instanceName: string, statusOutput: string): Promise<ServerInstance | null> {
     try {
       // Read instance configuration
       const config = await this.readInstanceConfig(instanceName)
-
-      // Determine if running by checking status output
-      const isRunning = statusOutput.toLowerCase().includes('running') ||
-        statusOutput.toLowerCase().includes('listening')
-
+      
+      // Check if server is running by looking for specific status lines
+      const runningMatch = statusOutput.match(/Server running:\s*(Yes|No)/i)
+      const listeningMatch = statusOutput.match(/Server listening:\s*(Yes|No)/i)
+      
+      // Server is considered running if either "Server running: Yes" or "Server listening: Yes"
+      const isRunning = (runningMatch && runningMatch[1].toLowerCase() === 'yes') ||
+                       (listeningMatch && listeningMatch[1].toLowerCase() === 'yes')
+      
       // Extract PID if available
       const pidMatch = statusOutput.match(/PID:\s*(\d+)/)
       const pid = pidMatch ? parseInt(pidMatch[1]) : undefined
-
+      
       // Extract player count if available
-      const playersMatch = statusOutput.match(/(\d+)\/(\d+)\s+players/)
+      const playersMatch = statusOutput.match(/(\d+)\/(\d+)\s+players/i)
       const onlinePlayers = playersMatch ? parseInt(playersMatch[1]) : 0
-      const maxPlayers = playersMatch ? parseInt(playersMatch[2]) :
-        parseInt(config.ark_MaxPlayers || '70')
-
+      const maxPlayers = playersMatch ? parseInt(playersMatch[2]) : 
+                        parseInt(config.ark_MaxPlayers || '70')
+      
       return {
         name: instanceName,
         status: isRunning ? 'running' : 'stopped',
