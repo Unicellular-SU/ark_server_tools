@@ -56,7 +56,16 @@ export class RconManager {
         throw new Error(`No RCON connection for instance: ${instance}`)
       }
 
-      const response = await rcon.exec(command)
+      const rawResponse = await rcon.exec(command)
+      
+      // Ensure response is a string (simple-rcon may return different types)
+      const response = typeof rawResponse === 'string' 
+        ? rawResponse 
+        : String(rawResponse || 'Command executed successfully')
+      
+      console.log(`[RCON ${instance}] Command: ${command}`)
+      console.log(`[RCON ${instance}] Response type:`, typeof rawResponse)
+      console.log(`[RCON ${instance}] Response:`, response)
       
       // Add to command history
       const history = this.commandHistory.get(instance) || []

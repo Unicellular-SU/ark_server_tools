@@ -90,7 +90,9 @@ export function RconTerminal({ instance, onExecute }: RconTerminalProps) {
                   <span className="text-gray-500">$</span> {entry.command}
                 </div>
                 <div className="text-green-400 whitespace-pre-wrap mt-1">
-                  {entry.response}
+                  {typeof entry.response === 'string' 
+                    ? entry.response 
+                    : JSON.stringify(entry.response, null, 2)}
                 </div>
               </div>
             ))

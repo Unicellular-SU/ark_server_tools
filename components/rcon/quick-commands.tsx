@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 
 interface QuickCommandsProps {
-  onExecute: (command: string) => Promise<void>
+  onExecute: (command: string) => Promise<void | string>
 }
 
 export function QuickCommands({ onExecute }: QuickCommandsProps) {

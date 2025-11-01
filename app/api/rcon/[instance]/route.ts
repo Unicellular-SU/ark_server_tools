@@ -31,11 +31,17 @@ export async function POST(
     
     const response = await rconManager.execute(instance, command)
     
+    // Ensure response is serializable
+    const responseString = typeof response === 'string' ? response : String(response)
+    
+    console.log('[RCON API] Command:', command)
+    console.log('[RCON API] Response:', responseString)
+    
     return NextResponse.json({
       success: true,
       data: {
         command,
-        response
+        response: responseString
       }
     })
   } catch (error: any) {

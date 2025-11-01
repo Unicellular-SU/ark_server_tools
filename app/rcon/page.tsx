@@ -68,7 +68,9 @@ export default function RconPage() {
       const data = await response.json()
       
       if (data.success) {
-        return data.data.response
+        // Ensure we return a string
+        const result = data.data.response
+        return typeof result === 'string' ? result : JSON.stringify(result)
       } else {
         throw new Error(data.error || 'Failed to execute command')
       }

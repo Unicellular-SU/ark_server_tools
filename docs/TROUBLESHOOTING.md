@@ -234,6 +234,21 @@ Stopped → Starting... → Running
 
 ---
 
+## RCON 问题
+
+### RCON 命令返回对象错误
+
+**错误**：
+```
+Objects are not valid as a React child
+```
+
+**原因**：simple-rcon 库可能返回对象而不是字符串
+
+**修复**：已自动处理，所有 RCON 响应都会转换为字符串
+
+---
+
 ## 权限问题
 
 ### 配置保存失败：Permission Denied
