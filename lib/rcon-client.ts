@@ -32,7 +32,7 @@ export class RconManager {
 
       await rcon.connect()
       this.connections.set(instance, rcon)
-      
+
       // Initialize command history for this instance
       if (!this.commandHistory.has(instance)) {
         this.commandHistory.set(instance, [])
@@ -51,22 +51,35 @@ export class RconManager {
   async execute(instance: string, command: string): Promise<string> {
     try {
       const rcon = this.connections.get(instance)
-      
+
       if (!rcon) {
         throw new Error(`No RCON connection for instance: ${instance}`)
       }
 
       const rawResponse = await rcon.exec(command)
-      
-      // Ensure response is a string (simple-rcon may return different types)
-      const response = typeof rawResponse === 'string' 
-        ? rawResponse 
-        : String(rawResponse || 'Command executed successfully')
-      
+
+      // Handle response from simple-rcon
+      // simple-rcon can return: string, object with body property, or other formats
+      let response: string
+
+      if (typeof rawResponse === 'string') {
+        response = rawResponse
+      } else if (rawResponse && typeof rawResponse === 'object') {
+        // Try to extract the actual response from the object
+        // simple-rcon may return an object with various properties
+        response = (rawResponse as any).body ||
+          (rawResponse as any).message ||
+          (rawResponse as any).response ||
+          JSON.stringify(rawResponse)
+      } else {
+        response = 'Command executed successfully'
+      }
+
       console.log(`[RCON ${instance}] Command: ${command}`)
       console.log(`[RCON ${instance}] Response type:`, typeof rawResponse)
-      console.log(`[RCON ${instance}] Response:`, response)
-      
+      console.log(`[RCON ${instance}] Raw response:`, rawResponse)
+      console.log(`[RCON ${instance}] Parsed response:`, response)
+
       // Add to command history
       const history = this.commandHistory.get(instance) || []
       history.push({
@@ -74,12 +87,12 @@ export class RconManager {
         response,
         timestamp: Date.now()
       })
-      
+
       // Keep only last 100 commands
       if (history.length > 100) {
         history.shift()
       }
-      
+
       this.commandHistory.set(instance, history)
 
       return response
@@ -95,7 +108,7 @@ export class RconManager {
   async disconnect(instance: string): Promise<void> {
     try {
       const rcon = this.connections.get(instance)
-      
+
       if (rcon) {
         await rcon.close()
         this.connections.delete(instance)
