@@ -28,24 +28,52 @@ export class ArkManager {
    * Execute arkmanager command
    */
   async executeCommand(command: string): Promise<string> {
+    const fullCommand = `${this.arkToolsPath} ${command}`
+
+    // Log command execution
+    console.log(`[ARK Manager] Executing command: ${fullCommand}`)
+
     try {
-      const { stdout, stderr } = await execAsync(`${this.arkToolsPath} ${command}`)
+      const { stdout, stderr } = await execAsync(fullCommand)
+
+      // Log output
+      console.log(`[ARK Manager] Command output (first 200 chars):`, stdout.substring(0, 200))
+
       if (stderr && !stderr.includes('Warning')) {
+        console.error(`[ARK Manager] Command stderr:`, stderr)
         throw new Error(stderr)
       }
       return stdout
     } catch (error: any) {
+      console.error(`[ARK Manager] Command failed:`, error.message)
       throw new Error(`Failed to execute command: ${error.message}`)
     }
   }
 
   /**
    * List all server instances
+   * Gets individual status for each instance for accuracy
    */
   async listInstances(): Promise<ServerInstance[]> {
     try {
-      const output = await this.executeCommand('status')
-      return this.parseStatusOutput(output)
+      // Get list of all instances
+      const listOutput = await this.executeCommand('list-instances --brief')
+      const instanceNames = listOutput.trim().split(/\s+/).filter(n => n)
+
+      // Get status for each instance individually
+      const instances: ServerInstance[] = []
+      for (const instanceName of instanceNames) {
+        try {
+          const instance = await this.getInstanceStatus(instanceName)
+          if (instance) {
+            instances.push(instance)
+          }
+        } catch (error) {
+          console.error(`Error getting status for ${instanceName}:`, error)
+        }
+      }
+
+      return instances
     } catch (error: any) {
       console.error('Error listing instances:', error)
       return []
@@ -266,51 +294,6 @@ export class ArkManager {
     }
   }
 
-  /**
-   * Parse arkmanager status output
-   * arkmanager status format varies, but typically shows:
-   * - Instance name
-   * - Running/Stopped status
-   * - Server version
-   * - PID if running
-   * - Player count if running
-   */
-  private async parseStatusOutput(output: string): Promise<ServerInstance[]> {
-    const instances: ServerInstance[] = []
-
-    // Try to get list of all instances first
-    try {
-      const listOutput = await this.executeCommand('list-instances --brief')
-      const instanceNames = listOutput.trim().split(/\s+/).filter(n => n)
-
-      for (const instanceName of instanceNames) {
-        const instance = await this.parseInstanceStatus(instanceName, output)
-        if (instance) {
-          instances.push(instance)
-        }
-      }
-    } catch (error) {
-      // Fallback to parsing the status output directly
-      console.error('Error listing instances, trying to parse status output:', error)
-
-      // Basic parsing as fallback
-      const lines = output.split('\n')
-      for (const line of lines) {
-        if (line.includes('running') || line.includes('stopped')) {
-          const parts = line.trim().split(/\s+/)
-          if (parts.length > 0) {
-            const instanceName = parts[0]
-            const instance = await this.parseInstanceStatus(instanceName, line)
-            if (instance) {
-              instances.push(instance)
-            }
-          }
-        }
-      }
-    }
-
-    return instances
-  }
 
   /**
    * Parse status for a single instance
@@ -327,12 +310,22 @@ export class ArkManager {
       // Read instance configuration
       const config = await this.readInstanceConfig(instanceName)
 
+      // Debug: log the status output
+      console.log(`[${instanceName}] Parsing status output:`, statusOutput.substring(0, 200))
+
       // Check if server is running by looking for specific status lines
-      const runningMatch = statusOutput.match(/Server running:\s*(Yes|No)/i)
-      const listeningMatch = statusOutput.match(/Server listening:\s*(Yes|No)/i)
+      // Note: arkmanager output may have multiple spaces
+      const runningMatch = statusOutput.match(/Server running:\s+(Yes|No)/i)
+      const listeningMatch = statusOutput.match(/Server listening:\s+(Yes|No)/i)
+
+      console.log(`[${instanceName}] Running match:`, runningMatch ? runningMatch[1] : 'NO MATCH')
+      console.log(`[${instanceName}] Listening match:`, listeningMatch ? listeningMatch[1] : 'NO MATCH')
 
       const isServerRunning = runningMatch && runningMatch[1].toLowerCase() === 'yes'
       const isServerListening = listeningMatch && listeningMatch[1].toLowerCase() === 'yes'
+
+      console.log(`[${instanceName}] isServerRunning:`, isServerRunning)
+      console.log(`[${instanceName}] isServerListening:`, isServerListening)
 
       // Determine server status
       let status: 'running' | 'stopped' | 'starting' | 'stopping'
@@ -340,20 +333,27 @@ export class ArkManager {
       if (!isServerRunning) {
         // Server process not running
         status = 'stopped'
+        console.log(`[${instanceName}] ✗ Status: STOPPED (Server running: No)`)
       } else if (!isServerListening) {
         // Server process running but not listening yet
         status = 'starting'
+        console.log(`[${instanceName}] ⏳ Status: STARTING (Server listening: No)`)
       } else {
         // Server is listening, check if it's queryable (fully started)
         const hasPlayerInfo = statusOutput.includes('Steam Players:')
         const unableToQuery = statusOutput.includes('Unable to query')
 
+        console.log(`[${instanceName}] hasPlayerInfo:`, hasPlayerInfo)
+        console.log(`[${instanceName}] unableToQuery:`, unableToQuery)
+
         if (unableToQuery || !hasPlayerInfo) {
           // Server listening but not fully ready
           status = 'starting'
+          console.log(`[${instanceName}] ⏳ Status: STARTING (listening but not queryable)`)
         } else {
           // Server fully online and queryable
           status = 'running'
+          console.log(`[${instanceName}] ✓ Status: RUNNING (fully online)`)
         }
       }
 
@@ -377,7 +377,7 @@ export class ArkManager {
       const serverName = serverNameMatch ? serverNameMatch[1].trim() : undefined
       const version = serverNameMatch ? serverNameMatch[2] : undefined
 
-      return {
+      const result = {
         name: instanceName,
         status,
         map: config.serverMap || 'TheIsland',
@@ -391,8 +391,12 @@ export class ArkManager {
         serverName,
         version
       }
+
+      console.log(`[${instanceName}] Final result:`, JSON.stringify(result, null, 2))
+
+      return result
     } catch (error) {
-      console.error(`Error parsing status for ${instanceName}:`, error)
+      console.error(`[${instanceName}] ✗ Error parsing status:`, error)
       return null
     }
   }
