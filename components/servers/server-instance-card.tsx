@@ -111,6 +111,13 @@ export function ServerInstanceCard({
                 </Button>
               )}
               
+              {instance.status === 'starting' && (
+                <Button variant="outline" className="w-full" disabled>
+                  <RotateCw className="mr-2 h-4 w-4 animate-spin" />
+                  Starting...
+                </Button>
+              )}
+              
               {instance.status === 'running' && (
                 <>
                   <Button 
@@ -143,12 +150,29 @@ export function ServerInstanceCard({
                 </>
               )}
               
-              <Button onClick={onConfigure} variant="secondary" className="w-full">
+              {instance.status === 'stopping' && (
+                <Button variant="outline" className="w-full" disabled>
+                  <RotateCw className="mr-2 h-4 w-4 animate-spin" />
+                  Stopping...
+                </Button>
+              )}
+              
+              <Button 
+                onClick={onConfigure} 
+                variant="secondary" 
+                className="w-full"
+                disabled={instance.status === 'starting' || instance.status === 'stopping'}
+              >
                 <Settings className="mr-2 h-4 w-4" />
                 Configure
               </Button>
               
-              <Button onClick={onUpdate} variant="outline" className="w-full">
+              <Button 
+                onClick={onUpdate} 
+                variant="outline" 
+                className="w-full"
+                disabled={instance.status === 'starting' || instance.status === 'stopping'}
+              >
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Update
               </Button>

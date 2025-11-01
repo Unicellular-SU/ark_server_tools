@@ -28,11 +28,25 @@ export function ServerStatusCard({
       case 'stopped':
         return <Badge variant="destructive">Stopped</Badge>
       case 'starting':
-        return <Badge variant="warning">Starting</Badge>
+        return <Badge variant="warning">Starting...</Badge>
       case 'stopping':
-        return <Badge variant="warning">Stopping</Badge>
+        return <Badge variant="warning">Stopping...</Badge>
       default:
         return <Badge>Unknown</Badge>
+    }
+  }
+
+  const getStatusColor = () => {
+    switch (instance.status) {
+      case 'running':
+        return 'text-green-600'
+      case 'stopped':
+        return 'text-red-600'
+      case 'starting':
+      case 'stopping':
+        return 'text-yellow-600'
+      default:
+        return 'text-gray-600'
     }
   }
 
@@ -106,6 +120,12 @@ export function ServerStatusCard({
                 Start
               </Button>
             )}
+            {instance.status === 'starting' && (
+              <Button size="sm" variant="outline" className="flex-1" disabled>
+                <RotateCw className="mr-2 h-4 w-4 animate-spin" />
+                Starting...
+              </Button>
+            )}
             {instance.status === 'running' && (
               <>
                 <Button onClick={onStop} size="sm" variant="destructive" className="flex-1">
@@ -117,6 +137,12 @@ export function ServerStatusCard({
                   Restart
                 </Button>
               </>
+            )}
+            {instance.status === 'stopping' && (
+              <Button size="sm" variant="outline" className="flex-1" disabled>
+                <RotateCw className="mr-2 h-4 w-4 animate-spin" />
+                Stopping...
+              </Button>
             )}
           </div>
         </div>

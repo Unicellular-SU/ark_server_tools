@@ -1,5 +1,12 @@
 # 修复日志
 
+## 更新日期
+2025年11月1日
+
+---
+
+# 修复日志
+
 ## 问题 1: 配置文件路径包含注释
 
 ### 错误信息
@@ -190,4 +197,46 @@ ark_MaxPlayers="70"
 ```
 
 所有这些配置现在都能正确解析！
+
+---
+
+## 状态详细说明
+
+根据用户提供的实际 arkmanager 输出，现在正确支持以下状态：
+
+### 1. 已停止 (stopped)
+```
+Server running: No
+Server listening: No
+```
+
+### 2. 启动中 - 阶段 1 (starting)
+```
+Server running: Yes
+Server listening: No
+有 PID，但还未监听端口
+```
+
+### 3. 启动中 - 阶段 2 (starting)
+```
+Server running: Yes
+Server listening: Yes
+Unable to query server（无法查询）
+```
+
+### 4. 运行中 (running)
+```
+Server running: Yes
+Server listening: Yes
+Steam Players: 0 / 70（有玩家信息）
+```
+
+### UI 改进
+- ✅ 启动中/停止中状态显示旋转动画 `animate-spin`
+- ✅ 过渡状态禁用操作按钮
+- ✅ 实时更新（每 5 秒通过 SSE）
+- ✅ 正确提取玩家数量 "Steam Players: X / Y"
+- ✅ 提取服务器名称和版本号
+
+详细的状态解析说明请参考 [STATUS_PARSING.md](STATUS_PARSING.md)
 

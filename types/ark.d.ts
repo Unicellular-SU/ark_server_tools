@@ -12,6 +12,8 @@ export interface ServerInstance {
   onlinePlayers: number
   maxPlayers: number
   uptime?: number
+  serverName?: string
+  version?: string
 }
 
 export interface ServerMetrics {
