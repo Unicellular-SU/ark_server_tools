@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { PageLayout } from '@/components/common/page-layout'
 import { ServerInstanceCard } from '@/components/servers/server-instance-card'
-import { InstallDialog } from '@/components/servers/install-dialog'
+import { InstallDialog, type InstallConfig } from '@/components/servers/install-dialog'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Plus } from 'lucide-react'
@@ -148,23 +148,23 @@ export default function ServersPage() {
     router.push(`/config/${instance}`)
   }
 
-  const handleInstall = async (instance: string, map: string) => {
+  const handleInstall = async (config: InstallConfig) => {
     try {
       toast({
         title: 'Installation Started',
-        description: `Installing ${instance} with map ${map}. This may take several minutes...`
+        description: `Installing ${config.instanceName} with map ${config.map}. This may take several minutes...`
       })
       
-      const response = await fetch(`/api/servers/${instance}/install`, { 
+      const response = await fetch(`/api/servers/${config.instanceName}/install`, { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ map })
+        body: JSON.stringify(config)
       })
       const data = await response.json()
       
       toast({
         title: data.success ? 'Installation Started' : 'Error',
-        description: data.message,
+        description: data.message || data.error,
         variant: data.success ? 'default' : 'destructive'
       })
       
