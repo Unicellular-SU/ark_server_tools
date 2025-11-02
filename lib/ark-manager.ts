@@ -62,74 +62,86 @@ export class ArkManager {
     
     console.log(`[ARK Manager] Executing streaming command: ${fullCommand}`)
     
-    return yield* new Promise<AsyncGenerator<string>>((resolve, reject) => {
-      const child = spawn('bash', ['-c', fullCommand])
+    const child = spawn('bash', ['-c', fullCommand])
+    
+    let buffer = ''
+    const outputQueue: string[] = []
+    let processCompleted = false
+    let processError: Error | null = null
+    
+    // Handle stdout
+    child.stdout.on('data', (data: Buffer) => {
+      const text = data.toString()
+      buffer += text
       
-      let buffer = ''
-      const generator = async function* () {
-        try {
-          // Handle stdout
-          child.stdout.on('data', (data: Buffer) => {
-            const text = data.toString()
-            buffer += text
-            
-            // Split by newlines and yield complete lines
-            const lines = buffer.split('\n')
-            // Keep last incomplete line in buffer
-            buffer = lines.pop() || ''
-            
-            for (const line of lines) {
-              if (line.trim()) {
-                // Strip ANSI codes before yielding
-                const cleanLine = line
-                  .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
-                  .replace(/\x1B\][0-9];.*?\x07/g, '')
-                  .replace(/\r/g, '')
-                yield cleanLine
-              }
-            }
-          })
-          
-          // Handle stderr
-          child.stderr.on('data', (data: Buffer) => {
-            const text = data.toString()
-            const cleanText = text
-              .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
-              .replace(/\x1B\][0-9];.*?\x07/g, '')
-              .replace(/\r/g, '')
-            if (cleanText.trim() && !cleanText.includes('Warning')) {
-              yield `ERROR: ${cleanText.trim()}`
-            }
-          })
-          
-          // Handle completion
-          child.on('close', (code: number) => {
-            // Yield any remaining buffer content
-            if (buffer.trim()) {
-              const cleanLine = buffer
-                .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
-                .replace(/\x1B\][0-9];.*?\x07/g, '')
-                .replace(/\r/g, '')
-              yield cleanLine
-            }
-            
-            if (code !== 0) {
-              yield `Command exited with code ${code}`
-            } else {
-              yield `Command completed successfully`
-            }
-          })
-          
-          child.on('error', (error: Error) => {
-            yield `ERROR: ${error.message}`
-          })
-        } catch (error: any) {
-          yield `ERROR: ${error.message}`
+      // Split by newlines and queue complete lines
+      const lines = buffer.split('\n')
+      // Keep last incomplete line in buffer
+      buffer = lines.pop() || ''
+      
+      for (const line of lines) {
+        if (line.trim()) {
+          // Strip ANSI codes before queueing
+          const cleanLine = line
+            .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
+            .replace(/\x1B\][0-9];.*?\x07/g, '')
+            .replace(/\r/g, '')
+          outputQueue.push(cleanLine)
         }
-      }()
-      
-      resolve(generator)
+      }
     })
+    
+    // Handle stderr
+    child.stderr.on('data', (data: Buffer) => {
+      const text = data.toString()
+      const cleanText = text
+        .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
+        .replace(/\x1B\][0-9];.*?\x07/g, '')
+        .replace(/\r/g, '')
+      if (cleanText.trim() && !cleanText.includes('Warning')) {
+        outputQueue.push(`ERROR: ${cleanText.trim()}`)
+      }
+    })
+    
+    // Handle completion
+    child.on('close', (code: number) => {
+      // Push any remaining buffer content
+      if (buffer.trim()) {
+        const cleanLine = buffer
+          .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
+          .replace(/\x1B\][0-9];.*?\x07/g, '')
+          .replace(/\r/g, '')
+        outputQueue.push(cleanLine)
+      }
+      
+      if (code !== 0) {
+        outputQueue.push(`Command exited with code ${code}`)
+      } else {
+        outputQueue.push(`Command completed successfully`)
+      }
+      
+      processCompleted = true
+    })
+    
+    child.on('error', (error: Error) => {
+      processError = error
+      outputQueue.push(`ERROR: ${error.message}`)
+      processCompleted = true
+    })
+    
+    // Yield queued output lines
+    while (!processCompleted || outputQueue.length > 0) {
+      if (outputQueue.length > 0) {
+        yield outputQueue.shift()!
+      } else {
+        // Wait a bit before checking again
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+    }
+    
+    if (processError) {
+      throw processError
+    }
   }
 
   /**
