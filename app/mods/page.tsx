@@ -15,8 +15,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Download, Trash2, RefreshCw, Plus } from 'lucide-react'
-import type { ServerInstance } from '@/types/ark'
+import { Download, Trash2, RefreshCw, Plus, Save } from 'lucide-react'
+import type { ServerInstance, ServerConfig } from '@/types/ark'
 
 export default function ModsPage() {
   const [servers, setServers] = useState<ServerInstance[]>([])
@@ -25,6 +25,8 @@ export default function ModsPage() {
   const [newModId, setNewModId] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState('')
+  const [config, setConfig] = useState<ServerConfig>({})
+  const [configLoading, setConfigLoading] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -34,6 +36,7 @@ export default function ModsPage() {
   useEffect(() => {
     if (selectedInstance) {
       fetchMods()
+      fetchConfig()
     }
   }, [selectedInstance])
 
@@ -41,7 +44,7 @@ export default function ModsPage() {
     try {
       const response = await fetch('/api/servers')
       const data = await response.json()
-      
+
       if (data.success) {
         setServers(data.data)
         if (data.data.length > 0 && !selectedInstance) {
@@ -56,14 +59,14 @@ export default function ModsPage() {
   const fetchMods = async (forceRefresh: boolean = false) => {
     try {
       setLoading(true)
-      setLoadingMessage(forceRefresh 
-        ? 'Refreshing mod list from server... This may take a moment.' 
+      setLoadingMessage(forceRefresh
+        ? 'Refreshing mod list from server... This may take a moment.'
         : 'Loading installed mods... (using cache if available)')
-      
+
       const url = `/api/mods/${selectedInstance}${forceRefresh ? '?forceRefresh=true' : ''}`
       const response = await fetch(url)
       const data = await response.json()
-      
+
       if (data.success) {
         setInstalledMods(data.data)
         // Don't show toast for cached results to avoid spam
@@ -88,6 +91,50 @@ export default function ModsPage() {
     }
   }
 
+  const fetchConfig = async () => {
+    try {
+      setConfigLoading(true)
+      const response = await fetch(`/api/servers/${selectedInstance}/config`)
+      const data = await response.json()
+
+      if (data.success) {
+        setConfig(data.data)
+      } else {
+        console.error('Failed to load config:', data.error)
+      }
+    } catch (error) {
+      console.error('Failed to load config:', error)
+    } finally {
+      setConfigLoading(false)
+    }
+  }
+
+  const handleSaveConfig = async () => {
+    try {
+      setConfigLoading(true)
+      const response = await fetch(`/api/servers/${selectedInstance}/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      })
+      const data = await response.json()
+
+      toast({
+        title: data.success ? 'Success' : 'Error',
+        description: data.success ? 'Mod configuration saved successfully' : data.error,
+        variant: data.success ? 'default' : 'destructive'
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save configuration',
+        variant: 'destructive'
+      })
+    } finally {
+      setConfigLoading(false)
+    }
+  }
+
   const handleInstallMod = async () => {
     if (!newModId.trim()) return
 
@@ -95,20 +142,20 @@ export default function ModsPage() {
       setLoading(true)
       const modIds = newModId.split(',').map(id => id.trim()).filter(id => id)
       setLoadingMessage(`Installing ${modIds.length} mod(s)... This may take several minutes depending on mod size.`)
-      
+
       const response = await fetch(`/api/mods/${selectedInstance}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ modIds })
       })
       const data = await response.json()
-      
+
       toast({
         title: data.success ? 'Success' : 'Error',
         description: data.message,
         variant: data.success ? 'default' : 'destructive'
       })
-      
+
       if (data.success) {
         setNewModId('')
         fetchMods()
@@ -135,13 +182,13 @@ export default function ModsPage() {
         body: JSON.stringify({ modId })
       })
       const data = await response.json()
-      
+
       toast({
         title: data.success ? 'Success' : 'Error',
         description: data.message,
         variant: data.success ? 'default' : 'destructive'
       })
-      
+
       if (data.success) {
         fetchMods()
       }
@@ -163,16 +210,16 @@ export default function ModsPage() {
       setLoadingMessage(forceRefresh
         ? 'Checking for mod updates from Steam Workshop... This may take up to 90 seconds.'
         : 'Checking for mod updates... (using cache if available)')
-      
+
       const url = `/api/mods/${selectedInstance}/check${forceRefresh ? '?forceRefresh=true' : ''}`
       const response = await fetch(url)
       const data = await response.json()
-      
+
       if (data.success) {
         toast({
           title: 'Mod Update Check',
-          description: data.data.updateAvailable 
-            ? 'Mod updates are available!' 
+          description: data.data.updateAvailable
+            ? 'Mod updates are available!'
             : 'All mods are up to date',
           variant: data.data.updateAvailable ? 'default' : 'default'
         })
@@ -230,6 +277,84 @@ export default function ModsPage() {
           <>
             <Card>
               <CardHeader>
+                <CardTitle>Mod Configuration</CardTitle>
+                <CardDescription>
+                  Configure which mods are loaded when the server starts. Mod loading order matters!
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="gameModIds">Game Mod IDs (逗号分隔，按加载顺序排列)</Label>
+                  <Input
+                    id="gameModIds"
+                    value={config.GameModIds || ''}
+                    onChange={(e) => setConfig({ ...config, GameModIds: e.target.value })}
+                    placeholder="731604991,889745138,895711211"
+                    disabled={configLoading}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    这些是服务器启动时加载的 Mod。多个 Mod ID 用逗号分隔。<strong>顺序很重要！</strong>方舟会按照这里的顺序加载 mod。
+                  </p>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <Button
+                    onClick={handleSaveConfig}
+                    disabled={configLoading}
+                    size="sm"
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    {configLoading ? 'Saving...' : 'Save Configuration'}
+                  </Button>
+                  <p className="text-xs text-amber-600">
+                    ⚠️ 修改后需要重启服务器才能生效
+                  </p>
+                </div>
+
+                {/* 配置与已安装 mod 对比 */}
+                <div className="border-t pt-3 mt-3">
+                  <h4 className="text-sm font-medium mb-2">Status Overview</h4>
+                  {(() => {
+                    const configuredMods = config.GameModIds?.split(',').map(id => id.trim()).filter(id => id) || []
+                    const notInstalled = configuredMods.filter(id => !installedMods.includes(id))
+                    const notConfigured = installedMods.filter(id => !configuredMods.includes(id))
+
+                    return (
+                      <div className="space-y-2 text-xs">
+                        {notInstalled.length > 0 && (
+                          <div className="bg-red-50 border border-red-200 rounded p-2">
+                            <p className="text-red-900">
+                              <strong>⚠️ 已配置但未安装:</strong> {notInstalled.join(', ')}
+                            </p>
+                            <p className="text-red-800 mt-1">
+                              这些 mod 在配置中，但尚未安装。服务器启动时可能会出错。
+                            </p>
+                          </div>
+                        )}
+                        {notConfigured.length > 0 && (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
+                            <p className="text-yellow-900">
+                              <strong>💡 已安装但未配置:</strong> {notConfigured.join(', ')}
+                            </p>
+                            <p className="text-yellow-800 mt-1">
+                              这些 mod 已安装，但未添加到配置中。服务器启动时不会加载它们。
+                            </p>
+                          </div>
+                        )}
+                        {notInstalled.length === 0 && notConfigured.length === 0 && installedMods.length > 0 && (
+                          <div className="bg-green-50 border border-green-200 rounded p-2">
+                            <p className="text-green-900">✓ 配置与已安装 mod 一致</p>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle>Install New Mod</CardTitle>
                 <CardDescription>
                   Enter Steam Workshop Mod ID(s) to install. Separate multiple IDs with commas.
@@ -267,20 +392,20 @@ export default function ModsPage() {
                   <CardDescription>Manage currently installed mods</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    onClick={() => fetchMods(true)} 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    onClick={() => fetchMods(true)}
+                    variant="outline"
+                    size="sm"
                     disabled={loading}
                     title="Refresh mod list from server"
                   >
                     <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                     Refresh List
                   </Button>
-                  <Button 
-                    onClick={() => handleCheckModUpdates(true)} 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    onClick={() => handleCheckModUpdates(true)}
+                    variant="outline"
+                    size="sm"
                     disabled={loading}
                     title="Check for updates on Steam Workshop"
                   >
@@ -351,19 +476,19 @@ export default function ModsPage() {
                 <div>
                   <h4 className="font-medium mb-1">1. 安装 Mod</h4>
                   <p className="text-muted-foreground">
-                    输入 Steam Workshop Mod ID，点击 Install。支持同时安装多个 mod（用逗号分隔）。
+                    在 "Install New Mod" 卡片中输入 Steam Workshop Mod ID，点击 Install。支持同时安装多个 mod（用逗号分隔）。
                   </p>
                 </div>
                 <div>
-                  <h4 className="font-medium mb-1">2. 配置 Mod</h4>
+                  <h4 className="font-medium mb-1">2. 配置 Mod 加载顺序</h4>
                   <p className="text-muted-foreground">
-                    安装后，在 Configuration 页面的 Gameplay 标签中，将 Mod ID 添加到 "Game Mod IDs" 字段。
+                    在 "Mod Configuration" 卡片中编辑 "Game Mod IDs" 字段，添加已安装的 mod ID。<strong className="text-amber-700">注意：mod 的加载顺序很重要！</strong>方舟会按照你输入的顺序加载 mod，某些 mod 需要特定的加载顺序才能正常工作。
                   </p>
                 </div>
                 <div>
-                  <h4 className="font-medium mb-1">3. 重启服务器</h4>
+                  <h4 className="font-medium mb-1">3. 保存并重启</h4>
                   <p className="text-muted-foreground">
-                    Mod 配置修改后，必须重启服务器才能加载新的 mod。
+                    点击 "Save Configuration" 保存配置，然后到 Dashboard 页面重启服务器以应用新的 mod 配置。
                   </p>
                 </div>
                 <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-3">
@@ -373,8 +498,11 @@ export default function ModsPage() {
                   <p className="text-xs text-blue-900 mb-2">
                     <strong>性能优化：</strong>系统已启用智能缓存机制。Mod 列表缓存 5 分钟，更新检查缓存 30 分钟。首次加载可能需要时间，后续访问将即时响应。
                   </p>
-                  <p className="text-xs text-blue-900">
+                  <p className="text-xs text-blue-900 mb-2">
                     <strong>刷新数据：</strong>点击 "Refresh List" 或 "Check Updates" 按钮可以强制从服务器获取最新数据（可能需要 30-90 秒）。
+                  </p>
+                  <p className="text-xs text-blue-900">
+                    <strong>Mod 加载顺序：</strong>某些 mod 可能依赖于其他 mod，或需要特定的加载顺序。请查阅 mod 作者的说明来确定正确的加载顺序。
                   </p>
                 </div>
               </CardContent>
