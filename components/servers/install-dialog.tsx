@@ -47,6 +47,7 @@ const ARK_MAPS = [
   { value: 'TheIsland', label: 'The Island' },
   { value: 'TheCenter', label: 'The Center' },
   { value: 'ScorchedEarth_P', label: 'Scorched Earth' },
+  { value: 'Ragnarok', label: 'Ragnarok' },
   { value: 'Aberration_P', label: 'Aberration' },
   { value: 'Extinction', label: 'Extinction' },
   { value: 'Valguero_P', label: 'Valguero' },
@@ -55,6 +56,7 @@ const ARK_MAPS = [
   { value: 'CrystalIsles', label: 'Crystal Isles' },
   { value: 'LostIsland', label: 'Lost Island' },
   { value: 'Fjordur', label: 'Fjordur' },
+  { value: 'Aquatica', label: 'Aquatica' },
 ]
 
 export function InstallDialog({ open, onOpenChange, onInstall }: InstallDialogProps) {
@@ -113,9 +115,9 @@ export function InstallDialog({ open, onOpenChange, onInstall }: InstallDialogPr
     }
   }
 
-  const isFormValid = instanceName.trim() && adminPassword.trim() && 
-                      port > 0 && queryPort > 0 && rconPort > 0 && maxPlayers > 0 &&
-                      (!joinCluster || (clusterId.trim() && clusterDir.trim()))
+  const isFormValid = instanceName.trim() && adminPassword.trim() &&
+    port > 0 && queryPort > 0 && rconPort > 0 && maxPlayers > 0 &&
+    (!joinCluster || (clusterId.trim() && clusterDir.trim()))
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -126,14 +128,14 @@ export function InstallDialog({ open, onOpenChange, onInstall }: InstallDialogPr
             Configure and install a new ARK server instance
           </DialogDescription>
         </DialogHeader>
-        
+
         <Tabs defaultValue="basic" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="basic">Basic Settings</TabsTrigger>
             <TabsTrigger value="network">Network & Ports</TabsTrigger>
             <TabsTrigger value="cluster">Cluster (Optional)</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="basic" className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="instance-name">Instance Name *</Label>
@@ -147,7 +149,7 @@ export function InstallDialog({ open, onOpenChange, onInstall }: InstallDialogPr
                 Unique identifier for this server instance
               </p>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="map">Map *</Label>
               <Select value={selectedMap} onValueChange={setSelectedMap}>
