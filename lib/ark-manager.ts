@@ -54,6 +54,85 @@ export class ArkManager {
   }
 
   /**
+   * Execute arkmanager command with streaming output
+   * Yields output lines as they are produced (for real-time display)
+   */
+  async *executeCommandStreaming(command: string): AsyncGenerator<string> {
+    const fullCommand = `${this.arkToolsPath} ${command}`
+    
+    console.log(`[ARK Manager] Executing streaming command: ${fullCommand}`)
+    
+    return yield* new Promise<AsyncGenerator<string>>((resolve, reject) => {
+      const child = spawn('bash', ['-c', fullCommand])
+      
+      let buffer = ''
+      const generator = async function* () {
+        try {
+          // Handle stdout
+          child.stdout.on('data', (data: Buffer) => {
+            const text = data.toString()
+            buffer += text
+            
+            // Split by newlines and yield complete lines
+            const lines = buffer.split('\n')
+            // Keep last incomplete line in buffer
+            buffer = lines.pop() || ''
+            
+            for (const line of lines) {
+              if (line.trim()) {
+                // Strip ANSI codes before yielding
+                const cleanLine = line
+                  .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
+                  .replace(/\x1B\][0-9];.*?\x07/g, '')
+                  .replace(/\r/g, '')
+                yield cleanLine
+              }
+            }
+          })
+          
+          // Handle stderr
+          child.stderr.on('data', (data: Buffer) => {
+            const text = data.toString()
+            const cleanText = text
+              .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
+              .replace(/\x1B\][0-9];.*?\x07/g, '')
+              .replace(/\r/g, '')
+            if (cleanText.trim() && !cleanText.includes('Warning')) {
+              yield `ERROR: ${cleanText.trim()}`
+            }
+          })
+          
+          // Handle completion
+          child.on('close', (code: number) => {
+            // Yield any remaining buffer content
+            if (buffer.trim()) {
+              const cleanLine = buffer
+                .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
+                .replace(/\x1B\][0-9];.*?\x07/g, '')
+                .replace(/\r/g, '')
+              yield cleanLine
+            }
+            
+            if (code !== 0) {
+              yield `Command exited with code ${code}`
+            } else {
+              yield `Command completed successfully`
+            }
+          })
+          
+          child.on('error', (error: Error) => {
+            yield `ERROR: ${error.message}`
+          })
+        } catch (error: any) {
+          yield `ERROR: ${error.message}`
+        }
+      }()
+      
+      resolve(generator)
+    })
+  }
+
+  /**
    * Strip ANSI color codes and escape sequences from output
    */
   private stripAnsiCodes(text: string): string {

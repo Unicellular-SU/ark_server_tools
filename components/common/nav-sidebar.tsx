@@ -9,7 +9,8 @@ import {
   Network, 
   Terminal, 
   ScrollText,
-  Puzzle
+  Puzzle,
+  Command
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -20,6 +21,7 @@ const navigation = [
   { name: 'Mods', href: '/mods', icon: Puzzle },
   { name: 'Cluster', href: '/cluster', icon: Network },
   { name: 'RCON', href: '/rcon', icon: Terminal },
+  { name: 'Commands', href: '/commands', icon: Command },
   { name: 'Logs', href: '/logs', icon: ScrollText },
 ]
 
