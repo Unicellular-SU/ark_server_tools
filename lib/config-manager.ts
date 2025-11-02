@@ -223,6 +223,10 @@ export class ConfigManager {
         const value = config.AlwaysRestartOnCrash ? 'true' : 'false'
         updatedLines.push(`arkAlwaysRestartOnCrash="${value}"`)
       }
+      if (!processedKeys.has('serverMap') && config.serverMap !== undefined) {
+        const formattedValue = typeof config.serverMap === 'string' ? `"${config.serverMap}"` : config.serverMap
+        updatedLines.push(`serverMap=${formattedValue}`)
+      }
 
       const newContent = updatedLines.join('\n')
 
