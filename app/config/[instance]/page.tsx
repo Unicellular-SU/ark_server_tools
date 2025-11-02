@@ -528,10 +528,16 @@ export default function ConfigPage() {
             ) : (
               <div className="space-y-6">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-900">
-                    <strong>说明：</strong>这些是 ARK 服务器的游戏配置文件，包含详细的游戏设置（如经验倍数、时间流速、恐龙数量等）。
-                    修改后需要重启服务器才能生效。每次保存或上传文件时，都会自动备份原文件到 <code className="bg-blue-100 px-1 rounded">instances/bak/</code> 目录。
+                  <p className="text-sm text-blue-900 space-y-2">
+                    <strong>配置文件管理说明：</strong>
                   </p>
+                  <ul className="text-sm text-blue-900 list-disc list-inside space-y-1 mt-2">
+                    <li>配置文件保存在 instances 目录下（如 <code className="bg-blue-100 px-1 rounded">/etc/arkmanager/instances/{instance}.GameUserSettings.ini</code>）</li>
+                    <li>arkmanager 启动服务器时会自动将这些文件复制到服务器目录，覆盖原有配置</li>
+                    <li>这样可以为每个服务器实例独立管理配置文件，防止冲突</li>
+                    <li>每次保存或上传都会自动备份原文件到 <code className="bg-blue-100 px-1 rounded">instances/bak/</code> 目录</li>
+                    <li><strong>修改后需要重启服务器才能生效</strong></li>
+                  </ul>
                 </div>
 
                 {/* GameUserSettings.ini Editor */}
@@ -539,7 +545,7 @@ export default function ConfigPage() {
                   <CardHeader>
                     <CardTitle>GameUserSettings.ini</CardTitle>
                     <CardDescription>
-                      服务器核心配置文件 - 包含会话设置、服务器设置和游戏模式设置
+                      服务器核心配置文件 - 包含会话设置、服务器设置和游戏模式设置（经验倍数、驯服速度、采集倍率等）
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -596,7 +602,7 @@ export default function ConfigPage() {
                   <CardHeader>
                     <CardTitle>Game.ini</CardTitle>
                     <CardDescription>
-                      游戏高级配置文件 - 包含恐龙生成、物品设置、地图配置等高级选项
+                      游戏高级配置文件 - 包含恐龙生成、物品堆叠、战利品、地图配置等高级选项
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">

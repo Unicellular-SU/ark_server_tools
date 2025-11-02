@@ -482,29 +482,20 @@ export class ConfigManager {
   }
 
   /**
-   * Get the full path to a game configuration file
-   * Reads arkserverroot from instance config and constructs path
+   * Get the full path to a game configuration file in instances directory
+   * According to ark-server-tools, config files should be stored in instances directory
+   * with format: /etc/arkmanager/instances/<instance>.GameUserSettings.ini
+   * 
+   * arkmanager will automatically copy these files to the server directory on startup
    */
   async getGameConfigFilePath(instance: string, fileType: 'GameUserSettings' | 'Game'): Promise<string> {
     try {
       const instanceConfigDir = process.env.ARK_INSTANCE_CONFIG_DIR || '/etc/arkmanager/instances'
-      const instanceConfigPath = `${instanceConfigDir}/${instance}.cfg`
-      
-      // Read instance config to get arkserverroot
-      let arkServerRoot = process.env.ARK_SERVERS_PATH || '/home/steam/ARK'
-      
-      try {
-        const instanceConfig = await this.readInstanceConfigFile(instanceConfigPath)
-        if (instanceConfig.arkserverroot) {
-          arkServerRoot = instanceConfig.arkserverroot as string
-        }
-      } catch (error) {
-        // If can't read instance config, use default
-        console.warn(`Could not read instance config for ${instance}, using default server root`)
-      }
-
       const filename = fileType === 'GameUserSettings' ? 'GameUserSettings.ini' : 'Game.ini'
-      return `${arkServerRoot}/ShooterGame/Saved/Config/LinuxServer/${filename}`
+      
+      // Return path in instances directory, following ark-server-tools convention
+      // e.g. /etc/arkmanager/instances/main.GameUserSettings.ini
+      return `${instanceConfigDir}/${instance}.${filename}`
     } catch (error: any) {
       console.error('Error getting game config file path:', error)
       throw error

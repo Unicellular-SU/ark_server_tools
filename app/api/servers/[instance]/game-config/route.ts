@@ -109,7 +109,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: `${filename} saved successfully. Previous version backed up to ${backupDir}. Restart the server for changes to take effect.`
+      message: `${filename} 已保存到 ${instanceConfigDir}/${instance}.${filename}。原文件已备份到 ${backupDir}。重启服务器后，arkmanager 会自动将此文件复制到服务器目录。`
     })
   } catch (error: any) {
     return NextResponse.json(
@@ -177,7 +177,7 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      message: `${filename} uploaded successfully. Previous version backed up to ${backupDir}. Restart the server for changes to take effect.`
+      message: `${filename} 已上传到 ${instanceConfigDir}/${instance}.${filename}。原文件已备份到 ${backupDir}。重启服务器后，arkmanager 会自动将此文件复制到服务器目录。`
     })
   } catch (error: any) {
     return NextResponse.json(
