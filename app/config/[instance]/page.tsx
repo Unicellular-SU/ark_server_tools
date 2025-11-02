@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { PageLayout } from '@/components/common/page-layout'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeft, Save, Upload, Download } from 'lucide-react'
 import type { ServerConfig } from '@/types/ark'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -22,9 +22,20 @@ export default function ConfigPage() {
   const [config, setConfig] = useState<ServerConfig>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  
+  // Game config files state
+  const [gameUserSettingsContent, setGameUserSettingsContent] = useState('')
+  const [gameContent, setGameContent] = useState('')
+  const [gameUserSettingsPath, setGameUserSettingsPath] = useState('')
+  const [gamePath, setGamePath] = useState('')
+  const [loadingFiles, setLoadingFiles] = useState(false)
+  const [savingFile, setSavingFile] = useState<string | null>(null)
+  const gameUserSettingsFileRef = useRef<HTMLInputElement>(null)
+  const gameFileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchConfig()
+    fetchGameConfigFiles()
   }, [instance])
 
   const fetchConfig = async () => {
@@ -83,6 +94,141 @@ export default function ConfigPage() {
     setConfig(prev => ({ ...prev, [key]: value }))
   }
 
+  // Fetch game config files
+  const fetchGameConfigFiles = async () => {
+    try {
+      setLoadingFiles(true)
+      const response = await fetch(`/api/servers/${instance}/game-config`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setGameUserSettingsContent(data.data.gameUserSettings.content)
+        setGameUserSettingsPath(data.data.gameUserSettings.path)
+        setGameContent(data.data.game.content)
+        setGamePath(data.data.game.path)
+      } else {
+        toast({
+          title: 'Error',
+          description: data.error || 'Failed to load game config files',
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load game config files',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoadingFiles(false)
+    }
+  }
+
+  // Save game config file
+  const handleSaveFile = async (fileType: 'GameUserSettings' | 'Game', content: string) => {
+    try {
+      setSavingFile(fileType)
+      const response = await fetch(`/api/servers/${instance}/game-config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileType, content })
+      })
+      const data = await response.json()
+      
+      toast({
+        title: data.success ? 'Success' : 'Error',
+        description: data.success ? data.message : data.error,
+        variant: data.success ? 'default' : 'destructive'
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save file',
+        variant: 'destructive'
+      })
+    } finally {
+      setSavingFile(null)
+    }
+  }
+
+  // Upload file
+  const handleUploadFile = async (fileType: 'GameUserSettings' | 'Game', file: File) => {
+    try {
+      setSavingFile(fileType)
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('fileType', fileType)
+      
+      const response = await fetch(`/api/servers/${instance}/game-config`, {
+        method: 'PUT',
+        body: formData
+      })
+      const data = await response.json()
+      
+      if (data.success) {
+        // Refresh file content
+        await fetchGameConfigFiles()
+        toast({
+          title: 'Success',
+          description: data.message,
+          variant: 'default'
+        })
+      } else {
+        toast({
+          title: 'Error',
+          description: data.error,
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to upload file',
+        variant: 'destructive'
+      })
+    } finally {
+      setSavingFile(null)
+    }
+  }
+
+  // Download file
+  const handleDownloadFile = async (fileType: 'GameUserSettings' | 'Game') => {
+    try {
+      const response = await fetch(`/api/servers/${instance}/game-config?download=${fileType}`)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${instance}-${fileType === 'GameUserSettings' ? 'GameUserSettings' : 'Game'}.ini`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      toast({
+        title: 'Success',
+        description: 'File downloaded successfully',
+        variant: 'default'
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to download file',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  // Handle file input change
+  const handleFileInputChange = (fileType: 'GameUserSettings' | 'Game', event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      handleUploadFile(fileType, file)
+    }
+    // Reset input
+    event.target.value = ''
+  }
+
   if (loading) {
     return (
       <PageLayout>
@@ -122,6 +268,7 @@ export default function ConfigPage() {
           <TabsList>
             <TabsTrigger value="basic">Basic Settings</TabsTrigger>
             <TabsTrigger value="gameplay">Gameplay</TabsTrigger>
+            <TabsTrigger value="game-files">Game Config Files</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
 
@@ -371,6 +518,137 @@ export default function ConfigPage() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="game-files">
+            {loadingFiles ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Loading game config files...</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-900">
+                    <strong>说明：</strong>这些是 ARK 服务器的游戏配置文件，包含详细的游戏设置（如经验倍数、时间流速、恐龙数量等）。
+                    修改后需要重启服务器才能生效。每次保存或上传文件时，都会自动备份原文件到 <code className="bg-blue-100 px-1 rounded">instances/bak/</code> 目录。
+                  </p>
+                </div>
+
+                {/* GameUserSettings.ini Editor */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>GameUserSettings.ini</CardTitle>
+                    <CardDescription>
+                      服务器核心配置文件 - 包含会话设置、服务器设置和游戏模式设置
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="bg-gray-50 rounded p-2">
+                      <p className="text-xs text-gray-600 font-mono">{gameUserSettingsPath}</p>
+                    </div>
+                    
+                    <Textarea
+                      className="font-mono text-sm min-h-[400px]"
+                      value={gameUserSettingsContent}
+                      onChange={(e) => setGameUserSettingsContent(e.target.value)}
+                      placeholder="# GameUserSettings.ini content will appear here"
+                      disabled={savingFile === 'GameUserSettings'}
+                    />
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleSaveFile('GameUserSettings', gameUserSettingsContent)}
+                        disabled={savingFile === 'GameUserSettings'}
+                      >
+                        <Save className="mr-2 h-4 w-4" />
+                        {savingFile === 'GameUserSettings' ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        onClick={() => gameUserSettingsFileRef.current?.click()}
+                        disabled={savingFile === 'GameUserSettings'}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload File
+                      </Button>
+                      <input
+                        ref={gameUserSettingsFileRef}
+                        type="file"
+                        accept=".ini,text/plain"
+                        className="hidden"
+                        onChange={(e) => handleFileInputChange('GameUserSettings', e)}
+                      />
+                      
+                      <Button
+                        variant="outline"
+                        onClick={() => handleDownloadFile('GameUserSettings')}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Game.ini Editor */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Game.ini</CardTitle>
+                    <CardDescription>
+                      游戏高级配置文件 - 包含恐龙生成、物品设置、地图配置等高级选项
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="bg-gray-50 rounded p-2">
+                      <p className="text-xs text-gray-600 font-mono">{gamePath}</p>
+                    </div>
+                    
+                    <Textarea
+                      className="font-mono text-sm min-h-[400px]"
+                      value={gameContent}
+                      onChange={(e) => setGameContent(e.target.value)}
+                      placeholder="# Game.ini content will appear here"
+                      disabled={savingFile === 'Game'}
+                    />
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleSaveFile('Game', gameContent)}
+                        disabled={savingFile === 'Game'}
+                      >
+                        <Save className="mr-2 h-4 w-4" />
+                        {savingFile === 'Game' ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        onClick={() => gameFileRef.current?.click()}
+                        disabled={savingFile === 'Game'}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload File
+                      </Button>
+                      <input
+                        ref={gameFileRef}
+                        type="file"
+                        accept=".ini,text/plain"
+                        className="hidden"
+                        onChange={(e) => handleFileInputChange('Game', e)}
+                      />
+                      
+                      <Button
+                        variant="outline"
+                        onClick={() => handleDownloadFile('Game')}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="advanced">

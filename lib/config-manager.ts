@@ -1,4 +1,5 @@
-import { readFile, writeFile } from 'fs/promises'
+import { readFile, writeFile, mkdir, access, copyFile } from 'fs/promises'
+import { join, dirname, basename } from 'path'
 import ini from 'ini'
 import type { ServerConfig } from '@/types/ark'
 
@@ -403,6 +404,110 @@ export class ConfigManager {
       ShowMapPlayerLocation: true,
       ServerPVE: true,
       EnablePVPGamma: false
+    }
+  }
+
+  /**
+   * Read game configuration file as raw text
+   * Used for GameUserSettings.ini and Game.ini
+   */
+  async readGameConfigFile(filePath: string): Promise<string> {
+    try {
+      const content = await readFile(filePath, 'utf-8')
+      return content
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        // File doesn't exist, return empty string
+        return ''
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Write game configuration file with automatic backup
+   * Backs up existing file before writing new content
+   */
+  async writeGameConfigFile(filePath: string, content: string, backupDir?: string): Promise<void> {
+    try {
+      // Check if file exists and backup if it does
+      try {
+        await access(filePath)
+        // File exists, create backup
+        if (backupDir) {
+          await this.backupConfigFile(filePath, backupDir)
+        }
+      } catch (error: any) {
+        if (error.code !== 'ENOENT') {
+          throw error
+        }
+        // File doesn't exist, no backup needed
+      }
+
+      // Ensure directory exists
+      const dir = dirname(filePath)
+      await mkdir(dir, { recursive: true })
+
+      // Write new content
+      await writeFile(filePath, content, 'utf-8')
+    } catch (error: any) {
+      console.error('Error writing game config file:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Backup configuration file to backup directory
+   * Returns the path to the backup file
+   */
+  async backupConfigFile(filePath: string, backupDir: string): Promise<string> {
+    try {
+      // Ensure backup directory exists
+      await mkdir(backupDir, { recursive: true })
+
+      // Generate backup filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+      const filename = basename(filePath)
+      const backupFilename = `${filename}.bak-${timestamp}`
+      const backupPath = join(backupDir, backupFilename)
+
+      // Copy file to backup location
+      await copyFile(filePath, backupPath)
+
+      return backupPath
+    } catch (error: any) {
+      console.error('Error backing up config file:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get the full path to a game configuration file
+   * Reads arkserverroot from instance config and constructs path
+   */
+  async getGameConfigFilePath(instance: string, fileType: 'GameUserSettings' | 'Game'): Promise<string> {
+    try {
+      const instanceConfigDir = process.env.ARK_INSTANCE_CONFIG_DIR || '/etc/arkmanager/instances'
+      const instanceConfigPath = `${instanceConfigDir}/${instance}.cfg`
+      
+      // Read instance config to get arkserverroot
+      let arkServerRoot = process.env.ARK_SERVERS_PATH || '/home/steam/ARK'
+      
+      try {
+        const instanceConfig = await this.readInstanceConfigFile(instanceConfigPath)
+        if (instanceConfig.arkserverroot) {
+          arkServerRoot = instanceConfig.arkserverroot as string
+        }
+      } catch (error) {
+        // If can't read instance config, use default
+        console.warn(`Could not read instance config for ${instance}, using default server root`)
+      }
+
+      const filename = fileType === 'GameUserSettings' ? 'GameUserSettings.ini' : 'Game.ini'
+      return `${arkServerRoot}/ShooterGame/Saved/Config/LinuxServer/${filename}`
+    } catch (error: any) {
+      console.error('Error getting game config file path:', error)
+      throw error
     }
   }
 }
