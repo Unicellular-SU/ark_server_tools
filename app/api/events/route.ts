@@ -7,14 +7,21 @@ import { systemMonitor } from '@/lib/system-monitor'
  */
 export async function GET(request: NextRequest) {
   const encoder = new TextEncoder()
-  
+
   const stream = new ReadableStream({
     async start(controller) {
+      let isClosed = false
+
       const sendUpdate = async () => {
+        // Don't send updates if connection is closed
+        if (isClosed) {
+          return
+        }
+
         try {
           // Get all server instances
           const instances = await arkManager.listInstances()
-          
+
           // Get metrics for each running instance
           const updates = await Promise.all(
             instances.map(async (instance) => {
@@ -28,32 +35,40 @@ export async function GET(request: NextRequest) {
               return instance
             })
           )
-          
+
           const data = `data: ${JSON.stringify({
             timestamp: Date.now(),
             servers: updates
           })}\n\n`
-          
-          controller.enqueue(encoder.encode(data))
+
+          // Check again before enqueuing
+          if (!isClosed) {
+            controller.enqueue(encoder.encode(data))
+          }
         } catch (error: any) {
           console.error('Error sending update:', error)
         }
       }
-      
+
       // Send initial update
       await sendUpdate()
-      
+
       // Send updates every 5 seconds
       const interval = setInterval(sendUpdate, 5000)
-      
+
       // Cleanup on close
       request.signal.addEventListener('abort', () => {
+        isClosed = true
         clearInterval(interval)
-        controller.close()
+        try {
+          controller.close()
+        } catch (e) {
+          // Controller might already be closed
+        }
       })
     },
   })
-  
+
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
