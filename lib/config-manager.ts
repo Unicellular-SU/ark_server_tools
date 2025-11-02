@@ -279,7 +279,11 @@ export class ConfigManager {
    */
   async writeGameUserSettings(configPath: string, config: ServerConfig): Promise<void> {
     try {
-      const iniContent = {
+      const iniContent: {
+        SessionSettings: Record<string, any>
+        ServerSettings: Record<string, any>
+        '/Script/ShooterGame.ShooterGameMode': Record<string, any>
+      } = {
         SessionSettings: {},
         ServerSettings: {},
         '/Script/ShooterGame.ShooterGameMode': {}
@@ -287,14 +291,10 @@ export class ConfigManager {
 
       // Distribute settings to appropriate sections
       const sessionKeys = ['SessionName', 'MaxPlayers', 'ServerPassword', 'ServerAdminPassword']
-      const serverKeys = ['DifficultyOffset', 'XPMultiplier', 'TamingSpeedMultiplier',
-        'HarvestAmountMultiplier', 'ResourcesRespawnPeriodMultiplier']
 
       for (const [key, value] of Object.entries(config)) {
         if (sessionKeys.includes(key)) {
           iniContent.SessionSettings[key] = value
-        } else if (serverKeys.includes(key)) {
-          iniContent.ServerSettings[key] = value
         } else {
           iniContent['/Script/ShooterGame.ShooterGameMode'][key] = value
         }
@@ -355,19 +355,6 @@ export class ConfigManager {
       errors.push('MaxPlayers must be between 1 and 100')
     }
 
-    // Validate difficulty offset
-    if (config.DifficultyOffset !== undefined && (config.DifficultyOffset < 0 || config.DifficultyOffset > 1)) {
-      errors.push('DifficultyOffset must be between 0 and 1')
-    }
-
-    // Validate multipliers (must be positive)
-    const multipliers = ['XPMultiplier', 'TamingSpeedMultiplier', 'HarvestAmountMultiplier']
-    for (const key of multipliers) {
-      if (config[key] !== undefined && config[key] < 0) {
-        errors.push(`${key} must be a positive number`)
-      }
-    }
-
     // Validate ports (must be in valid range)
     if (config.Port !== undefined && (config.Port < 1024 || config.Port > 65535)) {
       errors.push('Port must be between 1024 and 65535')
@@ -399,11 +386,6 @@ export class ConfigManager {
       ServerPassword: '',
       ServerAdminPassword: 'admin123',
       MaxPlayers: 70,
-      DifficultyOffset: 0.5,
-      XPMultiplier: 1.0,
-      TamingSpeedMultiplier: 1.0,
-      HarvestAmountMultiplier: 1.0,
-      ResourcesRespawnPeriodMultiplier: 1.0,
       AllowThirdPersonPlayer: true,
       ShowMapPlayerLocation: true,
       ServerPVE: true,
@@ -496,7 +478,7 @@ export class ConfigManager {
     try {
       const instanceConfigDir = process.env.ARK_INSTANCE_CONFIG_DIR || '/etc/arkmanager/instances'
       const filename = fileType === 'GameUserSettings' ? 'GameUserSettings.ini' : 'Game.ini'
-      
+
       // Return path in instances directory, following ark-server-tools convention
       // e.g. /etc/arkmanager/instances/main.GameUserSettings.ini
       return `${instanceConfigDir}/${instance}.${filename}`
